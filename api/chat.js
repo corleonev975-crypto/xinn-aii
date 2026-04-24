@@ -7,17 +7,14 @@ export default async function handler(req, res) {
     const { message, history = [] } = req.body;
     const apiKey = process.env.GROQ_API_KEY;
 
-    if (!apiKey) {
-      return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
-    }
-
-    if (!message) {
-      return res.status(400).json({ error: "Pesan kosong." });
-    }
+    if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
+    if (!message) return res.status(400).json({ error: "Pesan kosong." });
 
     const systemPrompt = `
 Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
 Jawab dalam Bahasa Indonesia yang natural, santai, jelas, dan membantu.
+Jawaban harus terasa hidup, ramah, dan tidak kaku.
+Boleh pakai emoji secukupnya jika cocok.
 Gunakan markdown yang rapi.
 Jika memberi kode, gunakan code block sesuai bahasa.
 `;
@@ -40,7 +37,7 @@ Jika memberi kode, gunakan code block sesuai bahasa.
       body: JSON.stringify({
         model: "llama-3.1-8b-instant",
         messages,
-        temperature: 0.7,
+        temperature: 0.8,
         max_tokens: 1024,
         stream: true
       })
@@ -84,7 +81,7 @@ Jika memberi kode, gunakan code block sesuai bahasa.
     }
 
     res.end();
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Server error streaming." });
   }
 }
