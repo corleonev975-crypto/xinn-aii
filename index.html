@@ -4,84 +4,79 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xinn AI</title>
-  <link rel="stylesheet" href="./style.css?v=FINAL100">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="./style.css?v=final999">
 </head>
 <body>
   <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
   <aside id="sidebar" class="sidebar">
-    <div class="side-profile">
-      <img src="./avatar.gif" alt="Xinn AI">
+    <div class="side-head">
+      <img src="./avatar.gif">
       <div>
         <h2>Xinn AI <span>Pro</span></h2>
         <p>AI Assistant</p>
       </div>
-      <button onclick="closeSidebar()" class="side-close">×</button>
+      <button onclick="closeSidebar()">×</button>
     </div>
 
-    <button onclick="newChat()" class="new-chat">＋ New Chat</button>
-
+    <button class="new-chat" onclick="newChat()">＋ New Chat</button>
     <p class="history-title">Riwayat Chat</p>
-    <div id="historyList" class="history-list"></div>
-
+    <div id="historyList"></div>
     <button class="settings">⚙ Pengaturan ›</button>
   </aside>
 
   <header class="topbar">
-    <button onclick="openSidebar()" class="top-btn">☰</button>
+    <button class="top-btn" onclick="openSidebar()">☰</button>
+    <div class="brand">✦ Xinn AI</div>
+    <button class="top-btn" onclick="toggleMore(event)">⋮</button>
 
-    <div class="brand">
-      <b>✦ Xinn AI</b>
-      <span>● Online</span>
-    </div>
-
-    <button onclick="toggleMore(event)" class="top-btn">⋮</button>
-
-    <div id="moreMenu" class="popup-menu">
+    <div id="moreMenu" class="menu">
       <button onclick="clearChat()">🗑 Hapus Chat</button>
       <button onclick="exportChat()">⬇ Export Chat</button>
       <button onclick="toggleTheme()">🌙 Tema</button>
       <button onclick="alert('Xinn AI Pro')">ⓘ Tentang Xinn AI</button>
-      <button>❔ Bantuan & FAQ</button>
     </div>
   </header>
 
   <main id="chatArea" class="chat-area">
     <section id="welcome" class="welcome">
       <div class="hero-avatar">
-        <img src="./avatar.gif" alt="Xinn AI">
+        <img src="./avatar.gif">
       </div>
 
       <h1>Apa yang bisa<br>saya bantu?</h1>
       <p>Xinn AI siap bantu coding, desain, debug, dan ide kamu.</p>
 
       <div class="quick-grid">
-        <button onclick="quickAsk('Buatkan kode HTML dan CSS')">⌨️ Buatkan kode<br>HTML & CSS</button>
-        <button onclick="quickAsk('Jelaskan konsep ini')">📖 Bantu jelaskan<br>suatu konsep</button>
-        <button onclick="quickAsk('Buat ide konten sosial media')">✨ Buat ide konten<br>sosial media</button>
-        <button onclick="quickAsk('Bantu debug kode saya')">🐞 Bantu debug<br>kode saya</button>
+        <button onclick="quickAsk('Buatkan kode HTML dan CSS')">⌨️<b>Buatkan kode</b><small>HTML & CSS</small></button>
+        <button onclick="quickAsk('Jelaskan konsep ini')">📖<b>Bantu jelaskan</b><small>suatu konsep</small></button>
+        <button onclick="quickAsk('Buat ide konten sosial media')">✨<b>Buat ide konten</b><small>sosial media</small></button>
+        <button onclick="quickAsk('Bantu debug kode saya')">🐞<b>Bantu debug</b><small>kode saya</small></button>
       </div>
     </section>
   </main>
 
   <footer class="input-wrap">
     <div id="plusMenu" class="plus-menu">
-      <label>🖼 Foto <input type="file" hidden></label>
-      <label>📷 Kamera <input type="file" hidden></label>
-      <label>📁 File <input type="file" hidden></label>
-      <label>🎙 Suara (Voice)</label>
+      <label>🖼 Foto <input type="file" hidden onchange="handleFile(this.files[0])"></label>
+      <label>📷 Kamera <input type="file" hidden onchange="handleFile(this.files[0])"></label>
+      <label>📁 File <input type="file" hidden onchange="handleFile(this.files[0])"></label>
     </div>
 
     <div class="chat-input">
-      <button onclick="togglePlus(event)" class="plus-btn">＋</button>
+      <button class="plus-btn" onclick="togglePlus(event)">＋</button>
       <textarea id="messageInput" placeholder="Ketik pesan..." rows="1"></textarea>
-      <button id="sendBtn" onclick="sendMessage()" class="send-btn">➤</button>
+      <button id="sendBtn" class="send-btn" onclick="sendMessage()">➤</button>
     </div>
-
     <p class="warning">Xinn AI dapat membuat kesalahan. Periksa informasi penting.</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="./script.js?v=FINAL100"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-markup.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+  <script src="./script.js?v=final999"></script>
 </body>
 </html>
