@@ -1,0 +1,399 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  font-family: Arial, sans-serif;
+  background: #0f0f10;
+  color: white;
+  overflow: hidden;
+}
+
+body.light {
+  background: #f4f4f5;
+  color: #111;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+.topbar {
+  height: 64px;
+  width: 100%;
+  background: #1f1f22;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+}
+
+body.light .topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #ddd;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  color: inherit;
+  font-size: 30px;
+  border-radius: 12px;
+}
+
+.icon-btn:active {
+  background: rgba(255,255,255,.1);
+  transform: scale(.96);
+}
+
+.dropdown {
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  width: 180px;
+  background: #26262a;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px;
+  padding: 8px;
+  display: none;
+  z-index: 100;
+  box-shadow: 0 20px 40px rgba(0,0,0,.35);
+}
+
+.dropdown.active {
+  display: block;
+}
+
+.dropdown button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: white;
+  text-align: left;
+  font-size: 14px;
+}
+
+.dropdown button:hover {
+  background: rgba(255,255,255,.08);
+}
+
+body.light .dropdown {
+  background: white;
+}
+
+body.light .dropdown button {
+  color: #111;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;
+  z-index: 80;
+}
+
+.overlay.active {
+  display: block;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -310px;
+  width: 290px;
+  height: 100vh;
+  background: #171719;
+  z-index: 120;
+  padding: 18px;
+  transition: .3s;
+  border-right: 1px solid rgba(255,255,255,.08);
+}
+
+.sidebar.active {
+  left: 0;
+}
+
+body.light .sidebar {
+  background: white;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-head button {
+  background: transparent;
+  color: inherit;
+  font-size: 30px;
+}
+
+.side-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #242428;
+  color: white;
+  text-align: left;
+  font-size: 15px;
+}
+
+body.light .side-btn {
+  background: #eee;
+  color: #111;
+}
+
+.side-footer {
+  position: absolute;
+  bottom: 20px;
+  opacity: .6;
+  font-size: 13px;
+}
+
+.chat-area {
+  position: fixed;
+  top: 64px;
+  bottom: 112px;
+  left: 0;
+  width: 100%;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+
+.welcome {
+  min-height: 65vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.logo-x {
+  font-size: 56px;
+  font-weight: 900;
+  color: #4b8cff;
+  text-shadow: 0 0 30px #4b8cff;
+  margin-bottom: 18px;
+}
+
+.welcome h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.welcome p {
+  color: #a1a1aa;
+  max-width: 320px;
+}
+
+.message {
+  max-width: 88%;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  animation: pop .2s ease;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message.user {
+  margin-left: auto;
+  background: #2b2b2f;
+  border-bottom-right-radius: 6px;
+}
+
+.message.ai {
+  margin-right: auto;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+body.light .message.user {
+  background: #e5e7eb;
+}
+
+body.light .message.ai {
+  border: 1px solid #ddd;
+}
+
+.typing {
+  opacity: .7;
+  font-style: italic;
+}
+
+.input-wrap {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, #0f0f10 80%, transparent);
+  padding: 12px 12px 8px;
+  z-index: 60;
+}
+
+body.light .input-wrap {
+  background: linear-gradient(to top, #f4f4f5 80%, transparent);
+}
+
+.chat-input {
+  width: 100%;
+  min-height: 62px;
+  background: #242428;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 28px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px;
+}
+
+body.light .chat-input {
+  background: white;
+  border: 1px solid #ddd;
+}
+
+.plus-btn,
+.send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: transparent;
+  color: #ddd;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.send-btn {
+  background: #d9d9d9;
+  color: #111;
+  font-size: 20px;
+}
+
+.plus-btn:active,
+.send-btn:active {
+  transform: scale(.92);
+}
+
+textarea {
+  flex: 1;
+  max-height: 140px;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  padding: 10px 2px;
+  line-height: 1.4;
+}
+
+body.light textarea {
+  color: #111;
+}
+
+textarea::placeholder {
+  color: #8b8b91;
+}
+
+.warning {
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.plus-menu {
+  position: absolute;
+  left: 18px;
+  bottom: 86px;
+  width: 180px;
+  background: #26262a;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  padding: 8px;
+  display: none;
+  z-index: 100;
+  box-shadow: 0 20px 40px rgba(0,0,0,.4);
+}
+
+.plus-menu.active {
+  display: block;
+}
+
+.plus-menu label {
+  display: block;
+  padding: 13px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.plus-menu label:hover {
+  background: rgba(255,255,255,.08);
+}
+
+body.light .plus-menu {
+  background: white;
+}
+
+.file-preview {
+  display: none;
+  margin: 0 0 8px 8px;
+  padding: 8px 12px;
+  width: fit-content;
+  background: #242428;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #ddd;
+}
+
+.file-preview.active {
+  display: block;
+}
+
+@media (min-width: 700px) {
+  .chat-area {
+    padding-left: 20%;
+    padding-right: 20%;
+  }
+
+  .input-wrap {
+    padding-left: 20%;
+    padding-right: 20%;
+  }
+}
