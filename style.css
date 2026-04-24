@@ -108,3 +108,15 @@ textarea::placeholder{color:#888}
 .message pre {
   position: relative;
 }
+.chat-area {
+  padding-bottom: 180px !important;
+  bottom: 0 !important;
+}
+
+.input-wrap {
+  z-index: 999 !important;
+}
+
+.message-row:last-child {
+  margin-bottom: 120px;
+    }
