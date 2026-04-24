@@ -93,3 +93,74 @@ body.light .send-btn{background:#111;color:#fff}
   .mobile-only{display:block}
   .message{max-width:84%;font-size:15px}
            }
+/* ===== FIX MOBILE FINAL ===== */
+@media(max-width:760px){
+
+  body{
+    overflow-x:hidden;
+  }
+
+  .sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    width:82%;
+    max-width:300px;
+    height:100dvh;
+    background:#171717;
+    transform:translateX(-100%);
+    transition:0.25s ease;
+    z-index:200;
+  }
+
+  .sidebar.active{
+    transform:translateX(0);
+  }
+
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    z-index:150;
+    display:none;
+  }
+
+  .overlay.active{
+    display:block;
+  }
+
+  .app{
+    margin-left:0;
+  }
+
+  .topbar{
+    left:0;
+    width:100%;
+    height:56px;
+    z-index:100;
+  }
+
+  .chat-area{
+    left:0;
+    width:100%;
+    padding:16px;
+  }
+
+  .input-wrap{
+    left:0;
+    width:100%;
+    padding:10px;
+  }
+
+  /* FIX dropdown biar gak nyebar */
+  .dropdown{
+    right:10px;
+    top:50px;
+  }
+
+  /* FIX plus menu */
+  .plus-menu{
+    left:10px;
+    bottom:80px;
+  }
+}
