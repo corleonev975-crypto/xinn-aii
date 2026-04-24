@@ -1,157 +1,118 @@
-const input = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const chatArea = document.getElementById("chatArea");
-const welcome = document.getElementById("welcome");
+document.addEventListener("DOMContentLoaded", () => {
+  const sendBtn = document.getElementById("sendBtn");
+  const input = document.getElementById("messageInput");
+  const chatArea = document.getElementById("chatArea");
+  const welcome = document.getElementById("welcome");
 
-// auto resize textarea
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = input.scrollHeight + "px";
-});
+  const menuBtn = document.getElementById("menuBtn");
+  const moreBtn = document.getElementById("moreBtn");
+  const plusBtn = document.getElementById("plusBtn");
 
-// enter kirim
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  const closeSidebarBtn = document.getElementById("closeSidebarBtn");
 
-sendBtn.addEventListener("click", sendMessage);
+  const moreMenu = document.getElementById("moreMenu");
+  const plusMenu = document.getElementById("plusMenu");
 
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  welcome.style.display = "none";
-
-  addMessage(text, "user");
-
-  input.value = "";
-  input.style.height = "auto";
-
-  // loading bubble
-  const loading = addMessage("...", "ai");
-
-  setTimeout(() => {
-    fakeAIResponse(text, loading);
-  }, 500);
-}
-
-// =========================
-// RENDER MESSAGE
-// =========================
-function addMessage(content, role) {
-  const msg = document.createElement("div");
-  msg.className = `msg ${role}`;
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-
-  bubble.innerHTML = content;
-
-  msg.appendChild(bubble);
-  chatArea.appendChild(msg);
-
-  scrollBottom();
-
-  return bubble;
-}
-
-// =========================
-// AI RESPONSE SIMULASI
-// =========================
-function fakeAIResponse(userText, bubble) {
-  let response = "";
-
-  if (userText.toLowerCase().includes("portofolio")) {
-    response = `
-Berikut contoh sederhana:
-
-### index.html
-\`\`\`html
-<!DOCTYPE html>
-<html>
-<head>
-<title>Portfolio</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<h1>Halo Dunia</h1>
-</body>
-</html>
-\`\`\`
-
-### style.css
-\`\`\`css
-body {
-  background: black;
-  color: white;
-}
-\`\`\`
-`;
-  } else {
-    response = "Halo! Saya siap membantu kamu 🚀";
+  if (!sendBtn || !input || !chatArea) {
+    alert("ERROR: sendBtn / messageInput / chatArea tidak ditemukan");
+    return;
   }
 
-  renderStreaming(response, bubble);
-}
+  function hideWelcome() {
+    if (welcome) welcome.style.display = "none";
+  }
 
-// =========================
-// STREAMING + MARKDOWN FIX
-// =========================
-function renderStreaming(text, bubble) {
-  bubble.innerHTML = "";
+  function scrollBottom() {
+    chatArea.scrollTo({
+      top: chatArea.scrollHeight,
+      behavior: "smooth"
+    });
+  }
 
-  let i = 0;
+  function addMessage(role, text) {
+    hideWelcome();
 
-  const interval = setInterval(() => {
-    bubble.innerHTML = marked.parse(text.slice(0, i));
+    const row = document.createElement("div");
+    row.className = `message-row ${role}`;
 
-    Prism.highlightAll();
+    const bubble = document.createElement("div");
+    bubble.className = `message ${role}`;
+    bubble.textContent = text;
 
-    addCopyButton();
-
+    row.appendChild(bubble);
+    chatArea.appendChild(row);
     scrollBottom();
+  }
 
-    i += 3;
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
 
-    if (i >= text.length) {
-      clearInterval(interval);
+    input.value = "";
+    addMessage("user", text);
+
+    setTimeout(() => {
+      addMessage("ai", "Halo! Saya siap membantu kamu.");
+    }, 400);
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
-  }, 15);
-}
-
-// =========================
-// COPY BUTTON FIX
-// =========================
-function addCopyButton() {
-  document.querySelectorAll("pre").forEach((block) => {
-    if (block.querySelector(".copy-btn")) return;
-
-    const btn = document.createElement("button");
-    btn.innerText = "Copy";
-    btn.className = "copy-btn";
-
-    btn.onclick = () => {
-      navigator.clipboard.writeText(block.innerText);
-      btn.innerText = "Copied!";
-      setTimeout(() => (btn.innerText = "Copy"), 1500);
-    };
-
-    block.appendChild(btn);
   });
-}
 
-// =========================
-// SCROLL SMOOTH
-// =========================
-function scrollBottom() {
-  chatArea.scrollTo({
-    top: chatArea.scrollHeight,
-    behavior: "smooth"
+  if (menuBtn && sidebar && overlay) {
+    menuBtn.addEventListener("click", () => {
+      sidebar.classList.add("active");
+      overlay.classList.add("active");
+    });
+  }
+
+  if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener("click", () => {
+      sidebar.classList.remove("active");
+      overlay.classList.remove("active");
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener("click", () => {
+      sidebar.classList.remove("active");
+      overlay.classList.remove("active");
+    });
+  }
+
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moreMenu.classList.toggle("active");
+      if (plusMenu) plusMenu.classList.remove("active");
+    });
+  }
+
+  if (plusBtn && plusMenu) {
+    plusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      plusMenu.classList.toggle("active");
+      if (moreMenu) moreMenu.classList.remove("active");
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (moreMenu && moreBtn && !moreMenu.contains(e.target) && e.target !== moreBtn) {
+      moreMenu.classList.remove("active");
+    }
+
+    if (plusMenu && plusBtn && !plusMenu.contains(e.target) && e.target !== plusBtn) {
+      plusMenu.classList.remove("active");
+    }
   });
-}
 
-// auto focus
-input.focus();
+  console.log("Xinn AI script aktif");
+});
