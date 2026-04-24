@@ -16,94 +16,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const plusMenu = document.getElementById("plusMenu");
 
   const clearChatBtn = document.getElementById("clearChatBtn");
+  const newChatBtn = document.getElementById("newChatBtn");
 
   let loading = false;
   let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
-
-  if (!sendBtn || !input || !chatArea) {
-    alert("ERROR: id sendBtn / messageInput / chatArea belum cocok.");
-    return;
-  }
 
   function saveChats() {
     localStorage.setItem("xinn_chats", JSON.stringify(chats));
   }
 
   function scrollBottom() {
-    chatArea.scrollTop = chatArea.scrollHeight;
-  }
-
-  function escapeHtml(str) {
-    return str.replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    }[m]));
-  }
-
-  function normalizeMarkdown(text) {
-    return (text || "")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/```\s*html/gi, "```html")
-      .replace(/```\s*css/gi, "```css")
-      .replace(/```\s*js/gi, "```javascript")
-      .replace(/```\s*javascript/gi, "```javascript")
-      .replace(/```\s*python/gi, "```python");
-  }
-
-  function format(text) {
-    const clean = normalizeMarkdown(text);
-    if (window.marked) return marked.parse(clean);
-    return escapeHtml(clean).replace(/\n/g, "<br>");
-  }
-
-  function liveFormat(text) {
-    let clean = normalizeMarkdown(text);
-
-    const fenceCount = (clean.match(/```/g) || []).length;
-    if (fenceCount % 2 === 1) {
-      clean += "\n```";
-    }
-
-    if (window.marked) return marked.parse(clean);
-    return escapeHtml(clean).replace(/\n/g, "<br>");
-  }
-
-  function highlight() {
-    if (window.Prism) {
-      requestAnimationFrame(() => Prism.highlightAll());
-    }
-  }
-
-  function addCopyButtons(scope) {
-    const pres = scope.querySelectorAll("pre");
-    pres.forEach((pre) => {
-      if (pre.querySelector(".copy-code-btn")) return;
-
-      const btn = document.createElement("button");
-      btn.className = "copy-code-btn";
-      btn.textContent = "Copy";
-      btn.type = "button";
-
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        const code = pre.querySelector("code");
-        await navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
-        btn.textContent = "Copied!";
-        setTimeout(() => (btn.textContent = "Copy"), 1200);
-      };
-
-      pre.appendChild(btn);
+    chatArea.scrollTo({
+      top: chatArea.scrollHeight,
+      behavior: "smooth"
     });
   }
 
-  function renderBubble(bubble, text, live = false) {
-    bubble.innerHTML = (live ? liveFormat(text) : format(text)) + (live ? `<span class="typing-cursor"></span>` : "");
-    highlight();
-    addCopyButtons(bubble);
-    scrollBottom();
+  function format(text) {
+    if (!text) return "";
+    return window.marked ? marked.parse(text) : text.replace(/\n/g, "<br>");
+  }
+
+  function highlight() {
+    if (window.Prism) setTimeout(() => Prism.highlightAll(), 0);
   }
 
   function addMessage(role, text, save = true) {
@@ -116,14 +51,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const avatar = document.createElement("img");
       avatar.className = "chat-avatar";
       avatar.src = "./avatar.gif";
-      avatar.alt = "Xinn AI";
       row.appendChild(avatar);
     }
 
     const bubble = document.createElement("div");
     bubble.className = `message ${role}`;
-    renderBubble(bubble, text, false);
-
+    bubble.innerHTML = format(text);
     row.appendChild(bubble);
 
     if (role === "user") {
@@ -140,34 +73,27 @@ document.addEventListener("DOMContentLoaded", () => {
       saveChats();
     }
 
+    highlight();
     scrollBottom();
     return bubble;
   }
 
   function loadingBubble() {
     return addMessage("ai", `
-<span class="typing-dots">
-  <span></span><span></span><span></span>
-</span>
-`, false);
+      <span class="typing-dots">
+        <span></span><span></span><span></span>
+      </span>
+    `, false);
   }
 
   async function streamAI(message, onChunk) {
     const res = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message,
-        history: chats.slice(-10)
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history: chats.slice(-10) })
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "API error");
-    }
+    if (!res.ok) throw new Error("API error");
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -196,31 +122,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ai = loadingBubble();
     let output = "";
-    let lastRender = 0;
 
     try {
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise(r => setTimeout(r, 350));
       ai.innerHTML = "";
 
       await streamAI(text, (chunk) => {
         output += chunk;
-
-        const now = Date.now();
-        if (now - lastRender > 60 || /[.!?}\n]$/.test(output)) {
-          renderBubble(ai, output, true);
-          lastRender = now;
-        }
+        ai.innerHTML = format(output) + `<span class="typing-cursor"></span>`;
+        highlight();
+        scrollBottom();
       });
 
-      renderBubble(ai, output || "⚠️ AI tidak memberi jawaban.", false);
+      ai.innerHTML = output ? format(output) : "⚠️ AI tidak memberi jawaban.";
+      highlight();
 
       chats.push({ role: "ai", text: output });
       saveChats();
 
     } catch (err) {
-      console.error(err);
-      renderBubble(ai, "⚠️ Error: API gagal atau koneksi bermasalah.", false);
-
+      ai.innerHTML = "⚠️ Error: API gagal atau koneksi bermasalah.";
     } finally {
       loading = false;
       sendBtn.disabled = false;
@@ -229,14 +150,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderChats() {
-    if (chats.length === 0) return;
+  function clearChat() {
+    chats = [];
+    saveChats();
 
-    if (welcome) welcome.style.display = "none";
+    chatArea.innerHTML = "";
 
-    chats.forEach((chat) => {
-      addMessage(chat.role, chat.text, false);
-    });
+    if (welcome) {
+      chatArea.appendChild(welcome);
+      welcome.style.display = "flex";
+    }
+
+    input.value = "";
+    loading = false;
+    sendBtn.disabled = false;
+    sendBtn.style.opacity = "1";
+
+    sidebar?.classList.remove("active");
+    overlay?.classList.remove("active");
+    moreMenu?.classList.remove("active");
+    plusMenu?.classList.remove("active");
   }
 
   sendBtn.onclick = sendMessage;
@@ -248,65 +181,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  if (menuBtn && sidebar && overlay) {
-    menuBtn.onclick = () => {
-      sidebar.classList.add("active");
-      overlay.classList.add("active");
-    };
+  menuBtn.onclick = () => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  };
+
+  closeSidebarBtn.onclick = clearPanels;
+  overlay.onclick = clearPanels;
+
+  function clearPanels() {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+    moreMenu.classList.remove("active");
+    plusMenu.classList.remove("active");
   }
 
-  if (closeSidebarBtn && sidebar && overlay) {
-    closeSidebarBtn.onclick = () => {
-      sidebar.classList.remove("active");
-      overlay.classList.remove("active");
-    };
-  }
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    moreMenu.classList.toggle("active");
+    plusMenu.classList.remove("active");
+  };
 
-  if (overlay && sidebar) {
-    overlay.onclick = () => {
-      sidebar.classList.remove("active");
-      overlay.classList.remove("active");
-    };
-  }
+  plusBtn.onclick = (e) => {
+    e.stopPropagation();
+    plusMenu.classList.toggle("active");
+    moreMenu.classList.remove("active");
+  };
 
-  if (moreBtn && moreMenu) {
-    moreBtn.onclick = (e) => {
-      e.stopPropagation();
-      moreMenu.classList.toggle("active");
-      if (plusMenu) plusMenu.classList.remove("active");
-    };
-  }
-
-  if (plusBtn && plusMenu) {
-    plusBtn.onclick = (e) => {
-      e.stopPropagation();
-      plusMenu.classList.toggle("active");
-      if (moreMenu) moreMenu.classList.remove("active");
-    };
-  }
-
-  if (clearChatBtn) {
-    clearChatBtn.onclick = () => {
-      chats = [];
-      saveChats();
-      chatArea.innerHTML = "";
-      if (welcome) {
-        chatArea.appendChild(welcome);
-        welcome.style.display = "flex";
-      }
-      if (moreMenu) moreMenu.classList.remove("active");
-    };
-  }
+  clearChatBtn.onclick = clearChat;
+  newChatBtn.onclick = clearChat;
 
   document.addEventListener("click", (e) => {
-    if (moreMenu && !moreMenu.contains(e.target) && e.target !== moreBtn) {
-      moreMenu.classList.remove("active");
-    }
-
-    if (plusMenu && !plusMenu.contains(e.target) && e.target !== plusBtn) {
+    if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
       plusMenu.classList.remove("active");
     }
-  });
 
-  renderChats();
+    if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
+      moreMenu.classList.remove("active");
+    }
+  });
 });
