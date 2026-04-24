@@ -1,39 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const menuBtn = document.getElementById("menuBtn");
-  const closeSidebarBtn = document.getElementById("closeSidebarBtn");
-  const moreBtn = document.getElementById("moreBtn");
-  const plusBtn = document.getElementById("plusBtn");
   const sendBtn = document.getElementById("sendBtn");
   const messageInput = document.getElementById("messageInput");
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("overlay");
-  const moreMenu = document.getElementById("moreMenu");
-  const plusMenu = document.getElementById("plusMenu");
   const chatArea = document.getElementById("chatArea");
   const welcome = document.getElementById("welcome");
-  const newChatBtn = document.getElementById("newChatBtn");
-  const clearChatBtn = document.getElementById("clearChatBtn");
-  const exportChatBtn = document.getElementById("exportChatBtn");
-  const themeBtn = document.getElementById("themeBtn");
-  const aboutBtn = document.getElementById("aboutBtn");
-  const historyBtn = document.getElementById("historyBtn");
-  const settingsBtn = document.getElementById("settingsBtn");
-  const filePreview = document.getElementById("filePreview");
-  const photoInput = document.getElementById("photoInput");
-  const cameraInput = document.getElementById("cameraInput");
-  const fileInput = document.getElementById("fileInput");
 
   let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
 
   function saveChats() {
     localStorage.setItem("xinn_chats", JSON.stringify(chats));
-  }
-
-  function closeAll() {
-    sidebar.classList.remove("active");
-    overlay.classList.remove("active");
-    moreMenu.classList.remove("active");
-    plusMenu.classList.remove("active");
   }
 
   function scrollBottom() {
@@ -45,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const msg = document.createElement("div");
     msg.className = `message ${role}`;
-    msg.textContent = text;
+    msg.innerHTML = formatMessage(text);
 
     chatArea.appendChild(msg);
 
@@ -61,53 +35,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const typing = document.createElement("div");
     typing.id = "typing";
     typing.className = "message ai typing";
-    typing.textContent = "Xinn AI sedang mengetik...";
+    typing.innerText = "Xinn AI sedang mengetik...";
     chatArea.appendChild(typing);
     scrollBottom();
   }
 
   function hideTyping() {
-    const typing = document.getElementById("typing");
-    if (typing) typing.remove();
-  }
-
-  function renderChats() {
-    chatArea.innerHTML = "";
-
-    if (chats.length === 0) {
-      chatArea.appendChild(welcome);
-      welcome.style.display = "flex";
-      return;
-    }
-
-    chats.forEach((chat) => {
-      addMessage(chat.role, chat.text, false);
-    });
+    const t = document.getElementById("typing");
+    if (t) t.remove();
   }
 
   async function askAI(text) {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: text,
-          history: chats.slice(-10)
-        })
-      });
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        history: chats.slice(-20)
+      })
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        return data.error || "API error. Cek GROQ_API_KEY di Vercel.";
-      }
-
-      return data.reply || "Xinn AI tidak mendapat jawaban.";
-    } catch (error) {
-      return "Koneksi error. Cek internet atau backend Vercel kamu.";
-    }
+    const data = await res.json();
+    return data.reply || "AI tidak menjawab";
   }
 
   async function sendMessage() {
@@ -115,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!text) return;
 
     messageInput.value = "";
-    messageInput.style.height = "auto";
 
     addMessage("user", text);
     showTyping();
@@ -126,74 +76,37 @@ document.addEventListener("DOMContentLoaded", () => {
     addMessage("ai", reply);
   }
 
-  function clearChat() {
-    chats = [];
-    saveChats();
-    chatArea.innerHTML = "";
-    chatArea.appendChild(welcome);
-    welcome.style.display = "flex";
-    closeAll();
+  function loadChats() {
+    if (chats.length === 0) return;
+
+    welcome.style.display = "none";
+
+    chats.forEach(c => {
+      addMessage(c.role, c.text, false);
+    });
   }
 
-  function exportChat() {
-    if (chats.length === 0) {
-      alert("Chat masih kosong.");
-      return;
+  // ===== FORMAT MESSAGE (CODE BLOCK FIX) =====
+  function formatMessage(text) {
+    if (text.includes("```")) {
+      return text
+        .replace(/```(.*?)\n([\s\S]*?)```/g, (_, lang, code) => {
+          return `<pre><code>${escapeHTML(code)}</code></pre>`;
+        })
+        .replace(/\n/g, "<br>");
     }
 
-    const text = chats
-      .map((c) => `${c.role === "user" ? "User" : "Xinn AI"}: ${c.text}`)
-      .join("\n\n");
-
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "xinn-ai-chat.txt";
-    a.click();
-
-    URL.revokeObjectURL(url);
-    closeAll();
+    return text.replace(/\n/g, "<br>");
   }
 
-  function handleFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    filePreview.textContent = `File dipilih: ${file.name}`;
-    filePreview.classList.add("active");
-    plusMenu.classList.remove("active");
-
-    addMessage("user", `Saya memilih file: ${file.name}`);
+  function escapeHTML(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
-  menuBtn.addEventListener("click", () => {
-    sidebar.classList.add("active");
-    overlay.classList.add("active");
-  });
-
-  closeSidebarBtn.addEventListener("click", closeAll);
-  overlay.addEventListener("click", closeAll);
-
-  moreBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    moreMenu.classList.toggle("active");
-    plusMenu.classList.remove("active");
-  });
-
-  plusBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    plusMenu.classList.toggle("active");
-    moreMenu.classList.remove("active");
-  });
-
-  sendBtn.addEventListener("click", sendMessage);
-
-  messageInput.addEventListener("input", () => {
-    messageInput.style.height = "auto";
-    messageInput.style.height = Math.min(messageInput.scrollHeight, 130) + "px";
-  });
+  sendBtn.onclick = sendMessage;
 
   messageInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -202,43 +115,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  newChatBtn.addEventListener("click", clearChat);
-  clearChatBtn.addEventListener("click", clearChat);
-  exportChatBtn.addEventListener("click", exportChat);
-
-  themeBtn.addEventListener("click", () => {
-    document.body.classList.toggle("light");
-    closeAll();
-  });
-
-  aboutBtn.addEventListener("click", () => {
-    alert("Xinn AI - Chat AI berbasis Groq API dengan UI ala ChatGPT.");
-    closeAll();
-  });
-
-  historyBtn.addEventListener("click", () => {
-    alert(`Total pesan tersimpan: ${chats.length}`);
-    closeAll();
-  });
-
-  settingsBtn.addEventListener("click", () => {
-    alert("Settings aktif. Versi PRO bisa ditambah login/database nanti.");
-    closeAll();
-  });
-
-  photoInput.addEventListener("change", () => handleFile(photoInput));
-  cameraInput.addEventListener("change", () => handleFile(cameraInput));
-  fileInput.addEventListener("change", () => handleFile(fileInput));
-
-  document.addEventListener("click", (e) => {
-    if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
-      moreMenu.classList.remove("active");
-    }
-
-    if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
-      plusMenu.classList.remove("active");
-    }
-  });
-
-  renderChats();
+  loadChats();
 });
