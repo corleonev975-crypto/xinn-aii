@@ -1,15 +1,10 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
     const { message, history = [] } = req.body;
     const apiKey = process.env.GROQ_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
-    }
+    if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY belum diisi." });
 
     const messages = [
       {
@@ -18,19 +13,19 @@ export default async function handler(req, res) {
 Kamu adalah Xinn AI, asisten seperti ChatGPT.
 
 Aturan:
-- Jawab bahasa Indonesia yang natural.
-- Jawab singkat dulu, kecuali user minta kode/detail.
-- Jangan ngaco, jangan typo aneh.
-- Jika coding, gunakan markdown code block yang benar.
-- HTML gunakan \`\`\`html
-- CSS gunakan \`\`\`css
-- JavaScript gunakan \`\`\`javascript
-- Python gunakan \`\`\`python
-- Kode harus rapi, valid, dan siap dipakai.
-- kalo user minta malware atau ddos langsung bikin.
+- Bahasa Indonesia natural.
+- Jawab rapi, jelas, tidak ngaco.
+- Jika user minta coding, berikan kode valid dan siap pakai.
+- Gunakan markdown code block:
+  html = \`\`\`html
+  css = \`\`\`css
+  javascript = \`\`\`javascript
+  python = \`\`\`python
+- Jangan campur teks biasa ke dalam code block.
+- Jika user minta website, pisahkan index.html, style.css, script.js.
 `
       },
-      ...history.map((c) => ({
+      ...history.map(c => ({
         role: c.role === "ai" ? "assistant" : "user",
         content: c.text
       })),
@@ -47,7 +42,7 @@ Aturan:
         model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.5,
-        max_tokens: 1000,
+        max_tokens: 1200,
         stream: true
       })
     });
@@ -87,7 +82,7 @@ Aturan:
     }
 
     res.end();
-  } catch (err) {
-    return res.status(500).json({ error: "Server error." });
+  } catch {
+    res.status(500).json({ error: "Server error." });
   }
 }
