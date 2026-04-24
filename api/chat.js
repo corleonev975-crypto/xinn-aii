@@ -7,16 +7,19 @@ export default async function handler(req, res) {
     const { message, history = [] } = req.body;
     const apiKey = process.env.GROQ_API_KEY;
 
-    if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
-    if (!message) return res.status(400).json({ error: "Pesan kosong." });
+    if (!apiKey) {
+      return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
+    }
+
+    if (!message) {
+      return res.status(400).json({ error: "Pesan kosong." });
+    }
 
     const systemPrompt = `
 Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
 Jawab dalam Bahasa Indonesia yang natural, santai, jelas, dan membantu.
-Jawaban harus terasa hidup, ramah, dan tidak kaku.
-Boleh pakai emoji secukupnya jika cocok.
-Gunakan markdown yang rapi.
-Jika memberi kode, gunakan code block sesuai bahasa.
+Gunakan markdown rapi.
+Kalau memberi kode, gunakan code block sesuai bahasa.
 `;
 
     const messages = [
@@ -52,7 +55,7 @@ Jika memberi kode, gunakan code block sesuai bahasa.
 
     res.writeHead(200, {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       "Connection": "keep-alive"
     });
 
@@ -63,25 +66,33 @@ Jika memberi kode, gunakan code block sesuai bahasa.
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
+      const chunk = decoder.decode(value, { stream: true });
       const lines = chunk.split("\n");
 
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
 
         const data = line.replace("data: ", "").trim();
-        if (data === "[DONE]") continue;
+
+        if (data === "[DONE]") {
+          continue;
+        }
 
         try {
           const json = JSON.parse(data);
           const text = json.choices?.[0]?.delta?.content || "";
-          if (text) res.write(text);
+
+          if (text) {
+            res.write(text);
+          }
         } catch {}
       }
     }
 
     res.end();
-  } catch {
-    res.status(500).json({ error: "Server error streaming." });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Server error streaming."
+    });
   }
-}
+      }
