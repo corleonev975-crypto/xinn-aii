@@ -19,19 +19,18 @@ export default async function handler(req, res) {
     }
 
     const systemPrompt = `
-Kamu adalah Xinn AI, asisten AI seperti ChatGPT.
-Jawab dalam Bahasa Indonesia, santai, jelas, dan membantu.
-Kalau user minta coding, kasih kode lengkap siap pakai.
+Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
+Jawab dalam Bahasa Indonesia yang natural, santai, jelas, dan membantu.
+Kalau user minta coding, berikan kode yang rapi dan siap pakai.
+Gunakan format markdown code block jika memberikan kode.
 `;
 
     const messages = [
       { role: "system", content: systemPrompt },
-
       ...history.map((c) => ({
         role: c.role === "ai" ? "assistant" : "user",
         content: c.text
       })),
-
       { role: "user", content: message }
     ];
 
@@ -42,8 +41,8 @@ Kalau user minta coding, kasih kode lengkap siap pakai.
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant", // ✅ FIX MODEL AKTIF
-        messages: messages,
+        model: "llama-3.1-8b-instant",
+        messages,
         temperature: 0.7,
         max_tokens: 1024
       })
@@ -53,17 +52,17 @@ Kalau user minta coding, kasih kode lengkap siap pakai.
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data.error?.message || "Groq API error"
+        error: data.error?.message || "Groq API error."
       });
     }
 
     return res.status(200).json({
-      reply: data.choices?.[0]?.message?.content || "AI tidak menjawab"
+      reply: data.choices?.[0]?.message?.content || "Tidak ada jawaban dari AI."
     });
 
-  } catch (err) {
+  } catch (error) {
     return res.status(500).json({
-      error: "Server error di Vercel"
+      error: "Server error. Cek api/chat.js atau Vercel logs."
     });
   }
 }
