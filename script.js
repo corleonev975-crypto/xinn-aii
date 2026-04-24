@@ -1,164 +1,86 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const $ = (id) => document.getElementById(id);
-
-  const menuBtn = $("menuBtn");
-  const closeSidebarBtn = $("closeSidebarBtn");
-  const moreBtn = $("moreBtn");
-  const plusBtn = $("plusBtn");
-  const sendBtn = $("sendBtn");
-  const messageInput = $("messageInput");
-
-  const sidebar = $("sidebar");
-  const overlay = $("overlay");
-  const moreMenu = $("moreMenu");
-  const plusMenu = $("plusMenu");
-  const chatArea = $("chatArea");
-  const welcome = $("welcome");
-
-  const newChatBtn = $("newChatBtn");
-  const clearChatBtn = $("clearChatBtn");
-  const exportChatBtn = $("exportChatBtn");
-  const historyList = $("historyList");
-
-  let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
-  let historySessions = JSON.parse(localStorage.getItem("xinn_history")) || [];
-
-  let isGenerating = false;
-  let persona = "santai";
-
-  const memory = JSON.parse(localStorage.getItem("xinn_memory")) || {
-    name: null,
-    mood: "normal"
-  };
-
-  function saveMemory() {
-    localStorage.setItem("xinn_memory", JSON.stringify(memory));
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  function detectMood(text) {
-    if (/error|bug|gagal|masalah/i.test(text)) return "serius";
-    if (/haha|wkwk|lol|santai/i.test(text)) return "santai";
-    if (text.length > 200) return "serius";
-    return "normal";
-  }
+  try {
+    const { message, history = [] } = req.body;
 
-  function applyMoodUI(mood) {
-    document.body.classList.remove("mood-santai", "mood-serius");
-    if (mood === "santai") document.body.classList.add("mood-santai");
-    if (mood === "serius") document.body.classList.add("mood-serius");
-  }
-
-  function applyPersona(text) {
-    if (persona === "dingin") return "Jawaban: " + text;
-    if (persona === "coder") return "💻 Mode Dev:\n" + text;
-    return text;
-  }
-
-  function rememberUser(text) {
-    const match = text.match(/nama saya (.*)/i);
-    if (match) {
-      memory.name = match[1];
-      saveMemory();
-    }
-  }
-
-  function saveChats() {
-    localStorage.setItem("xinn_chats", JSON.stringify(chats));
-  }
-
-  function scrollBottom() {
-    chatArea.scrollTo({
-      top: chatArea.scrollHeight,
-      behavior: "smooth"
-    });
-  }
-
-  function formatMessage(text) {
-    return marked.parse(text || "");
-  }
-
-  function highlightCode() {
-    setTimeout(() => Prism.highlightAll(), 0);
-  }
-
-  function playTypingSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.frequency.value = 400 + Math.random() * 200;
-      gain.gain.value = 0.01;
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start();
-      osc.stop(ctx.currentTime + 0.02);
-    } catch {}
-  }
-
-  function addMessage(role, text) {
-    if (welcome) welcome.style.display = "none";
-
-    const row = document.createElement("div");
-    row.className = `message-row ${role}`;
-
-    if (role === "ai") {
-      const avatar = document.createElement("img");
-      avatar.className = "chat-avatar";
-      avatar.src = "./avatar.gif";
-      row.appendChild(avatar);
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "GROQ_API_KEY belum di-set" });
     }
 
-    const msg = document.createElement("div");
-    msg.className = `message ${role}`;
-    msg.innerHTML = formatMessage(text);
+    const systemPrompt = `
+Kamu adalah Xinn AI (setara ChatGPT Pro, fokus coding & clarity).
 
-    row.appendChild(msg);
+ATURAN WAJIB:
+- Jawab singkat, jelas, tidak bertele-tele
+- Bahasa Indonesia natural
+- Jangan halu / ngaco / typo aneh
+- Jangan mengulang kalimat
 
-    chatArea.appendChild(row);
-    scrollBottom();
-  }
+JIKA CODING:
+- Gunakan markdown code block yang BENAR:
+  \`\`\`html
+  \`\`\`css
+  \`\`\`javascript
+  \`\`\`python
+- Kode harus VALID & bisa dijalankan
+- Pisahkan HTML / CSS / JS jika perlu
+- Jangan campur teks ke dalam code block
 
-  function createAIBox() {
-    const row = document.createElement("div");
-    row.className = "message-row ai";
+AUTO DEBUG:
+- Jika user kirim kode → cek & perbaiki
+- Jelaskan singkat kesalahan (1–2 poin)
+- Beri versi kode yang sudah diperbaiki
 
-    const avatar = document.createElement("img");
-    avatar.className = "chat-avatar";
-    avatar.src = "./avatar.gif";
+FORMAT:
+- Gunakan heading jika perlu (###)
+- Gunakan bullet list jika membantu
+- Jangan berlebihan
+`;
 
-    const msg = document.createElement("div");
-    msg.className = "message ai";
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.map((c) => ({
+        role: c.role === "ai" ? "assistant" : "user",
+        content: c.text
+      })),
+      { role: "user", content: message }
+    ];
 
-    msg.innerHTML = `
-      <span class="typing-dots">
-        <span></span><span></span><span></span>
-      </span>
-    `;
+    const groqRes = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          temperature: 0.5,
+          max_tokens: 900,
+          stream: true,
+          messages
+        })
+      }
+    );
 
-    row.appendChild(avatar);
-    row.appendChild(msg);
-    chatArea.appendChild(row);
+    if (!groqRes.ok) {
+      const err = await groqRes.text();
+      return res.status(500).json({ error: err });
+    }
 
-    scrollBottom();
-    return msg;
-  }
-
-  async function askAIStream(text, onChunk) {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: text,
-        history: chats.slice(-20)
-      })
+    // 👉 kirim plain text chunk ke client
+    res.writeHead(200, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive"
     });
 
-    const reader = res.body.getReader();
+    const reader = groqRes.body.getReader();
     const decoder = new TextDecoder();
 
     while (true) {
@@ -166,105 +88,27 @@ document.addEventListener("DOMContentLoaded", () => {
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
-      onChunk(chunk);
-    }
-  }
 
-  async function sendMessage() {
-    if (isGenerating) return;
+      // filter SSE -> ambil content saja
+      const lines = chunk.split("\n");
 
-    const text = messageInput.value.trim();
-    if (!text) return;
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
 
-    // command
-    if (text === "/coder") return persona = "coder", addMessage("ai","💻 Mode coder aktif");
-    if (text === "/dingin") return persona = "dingin", addMessage("ai","😐 Mode dingin aktif");
-    if (text === "/santai") return persona = "santai", addMessage("ai","😄 Mode santai aktif");
+        const data = line.replace("data:", "").trim();
+        if (data === "[DONE]") continue;
 
-    isGenerating = true;
-    sendBtn.disabled = true;
-
-    messageInput.value = "";
-
-    addMessage("user", text);
-
-    const aiBox = createAIBox();
-
-    await new Promise(r => setTimeout(r, 700 + Math.random()*900));
-
-    let fullText = "";
-    let first = true;
-
-    try {
-      await askAIStream(text, async (chunk) => {
-
-        if (first) {
-          aiBox.innerHTML = "";
-          first = false;
-        }
-
-        const words = chunk.split(" ");
-
-        for (let word of words) {
-
-          fullText += word + " ";
-
-          let speed =
-            fullText.length < 100 ? 35 :
-            fullText.length < 300 ? 20 : 12;
-
-          if (Math.random() < 0.07) speed += 300;
-
-          aiBox.innerHTML =
-            formatMessage(fullText) +
-            `<span class="typing-cursor"></span>`;
-
-          highlightCode();
-          scrollBottom();
-          playTypingSound();
-
-          await new Promise(r => setTimeout(r, speed));
-        }
-
-      });
-
-      // ===== PERSONALITY =====
-      memory.mood = detectMood(fullText);
-      saveMemory();
-
-      applyMoodUI(memory.mood);
-
-      fullText = applyPersona(fullText);
-      rememberUser(fullText);
-
-      if (memory.name) {
-        fullText = `👋 ${memory.name}, ` + fullText;
+        try {
+          const json = JSON.parse(data);
+          const text = json.choices?.[0]?.delta?.content;
+          if (text) res.write(text);
+        } catch {}
       }
-
-      if (memory.mood === "santai") fullText = "😄 " + fullText;
-      if (memory.mood === "serius") fullText = "🧠 " + fullText;
-
-      aiBox.innerHTML = formatMessage(fullText);
-      highlightCode();
-
-      chats.push({ role:"ai", text:fullText });
-      saveChats();
-
-    } catch (err) {
-      aiBox.textContent = "Error.";
     }
 
-    isGenerating = false;
-    sendBtn.disabled = false;
+    res.end();
+
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
   }
-
-  sendBtn.onclick = sendMessage;
-
-  messageInput.addEventListener("keydown", (e)=>{
-    if(e.key==="Enter" && !e.shiftKey){
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-});
+}
