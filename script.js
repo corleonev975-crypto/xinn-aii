@@ -1,31 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ========================
-  // ELEMENT
-  // ========================
   const sendBtn = document.getElementById("sendBtn");
   const messageInput = document.getElementById("messageInput");
   const chatArea = document.getElementById("chatArea");
 
   let isLoading = false;
 
-  // ========================
-  // SCROLL
-  // ========================
   function scrollBottom() {
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
-  // ========================
-  // ADD MESSAGE
-  // ========================
   function addMessage(role, text) {
     const row = document.createElement("div");
     row.className = `message-row ${role}`;
 
     const bubble = document.createElement("div");
     bubble.className = `message ${role}`;
-    bubble.innerHTML = text;
+    bubble.innerHTML = text || "";
 
     row.appendChild(bubble);
     chatArea.appendChild(row);
@@ -34,9 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return bubble;
   }
 
-  // ========================
-  // LOADING DOTS
-  // ========================
   function createLoading() {
     return addMessage("ai", `
       <span class="typing-dots">
@@ -45,9 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
     `);
   }
 
-  // ========================
-  // API FETCH (SAFE)
-  // ========================
+  // =========================
+  // API FIX (ANTI KOSONG)
+  // =========================
   async function fetchAI(message) {
     try {
       const res = await fetch("/api/chat", {
@@ -60,31 +48,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!res.ok) throw new Error("API error");
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      const text = await res.text();
 
-      let result = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        result += decoder.decode(value);
+      // 🔥 FIX: kalau kosong
+      if (!text || text.trim() === "") {
+        return "⚠️ AI tidak mengembalikan jawaban.";
       }
 
-      return result;
+      return text;
 
     } catch (err) {
       console.error(err);
-      return "⚠️ Error: tidak bisa mengambil jawaban dari AI.";
+      return "⚠️ Error: koneksi / API gagal.";
     }
   }
 
-  // ========================
-  // SEND MESSAGE
-  // ========================
+  // =========================
+  // SEND MESSAGE (ANTI BUG)
+  // =========================
   async function sendMessage() {
-    console.log("SEND CLICKED");
+    console.log("CLICK");
 
     if (isLoading) return;
 
@@ -94,64 +77,59 @@ document.addEventListener("DOMContentLoaded", () => {
     isLoading = true;
     sendBtn.disabled = true;
 
-    // clear input
     messageInput.value = "";
 
-    // tampilkan user
     addMessage("user", text);
 
-    // loading AI
     const aiBubble = createLoading();
 
-    // delay biar natural
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 500));
 
-    // ambil response
-    const response = await fetchAI(text);
+    try {
+      const response = await fetchAI(text);
 
-    // efek typing manusia
-    let finalText = "";
-    aiBubble.innerHTML = "";
+      aiBubble.innerHTML = "";
 
-    for (let i = 0; i < response.length; i++) {
-      finalText += response[i];
+      let finalText = "";
 
-      aiBubble.innerHTML =
-        finalText + `<span class="typing-cursor"></span>`;
+      for (let i = 0; i < response.length; i++) {
+        finalText += response[i];
 
-      scrollBottom();
+        aiBubble.innerHTML =
+          finalText + `<span class="typing-cursor"></span>`;
 
-      let speed = 12;
+        scrollBottom();
 
-      if (/[.,!?]/.test(response[i])) speed = 80;
-      if (Math.random() < 0.05) speed = 120;
+        let speed = 10;
 
-      await new Promise(r => setTimeout(r, speed));
+        if (/[.,!?]/.test(response[i])) speed = 60;
+        if (Math.random() < 0.05) speed = 100;
+
+        await new Promise(r => setTimeout(r, speed));
+      }
+
+      aiBubble.innerHTML = finalText;
+
+    } catch (err) {
+      aiBubble.innerHTML = "⚠️ Gagal memproses jawaban";
+      console.error(err);
     }
 
-    // selesai
-    aiBubble.innerHTML = finalText;
-
+    // 🔥 FIX PENTING: RESET STATE
     isLoading = false;
     sendBtn.disabled = false;
   }
 
-  // ========================
-  // EVENT LISTENER
-  // ========================
-  if (sendBtn && messageInput) {
+  // =========================
+  // EVENT FIX
+  // =========================
+  sendBtn.addEventListener("click", sendMessage);
 
-    sendBtn.addEventListener("click", sendMessage);
-
-    messageInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-  } else {
-    console.error("❌ ERROR: tombol atau input tidak ditemukan");
-  }
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 
 });
