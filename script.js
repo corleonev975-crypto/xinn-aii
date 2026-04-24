@@ -50,9 +50,10 @@ document.addEventListener("DOMContentLoaded", () => {
     row.className = `message-row ${role}`;
 
     if (role === "ai") {
-      const avatar = document.createElement("div");
+      const avatar = document.createElement("img");
       avatar.className = "chat-avatar";
-      avatar.textContent = "X";
+      avatar.src = "./avatar.gif";
+      avatar.alt = "Xinn AI";
       row.appendChild(avatar);
     }
 
@@ -61,6 +62,14 @@ document.addEventListener("DOMContentLoaded", () => {
     msg.innerHTML = formatMessage(text);
 
     row.appendChild(msg);
+
+    if (role === "user") {
+      const userAvatar = document.createElement("div");
+      userAvatar.className = "user-avatar";
+      userAvatar.textContent = "U";
+      row.appendChild(userAvatar);
+    }
+
     chatArea.appendChild(row);
 
     if (save) {
@@ -77,13 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
     row.id = "typing";
     row.className = "message-row ai";
 
-    const avatar = document.createElement("div");
+    const avatar = document.createElement("img");
     avatar.className = "chat-avatar";
-    avatar.textContent = "X";
+    avatar.src = "./avatar.gif";
+    avatar.alt = "Xinn AI";
 
     const typing = document.createElement("div");
-    typing.className = "message ai typing";
-    typing.textContent = "Xinn AI sedang mengetik...";
+    typing.className = "message ai";
+    typing.innerHTML = `
+      <span class="typing-dots">
+        <span></span><span></span><span></span>
+      </span>
+    `;
 
     row.appendChild(avatar);
     row.appendChild(typing);
