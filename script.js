@@ -1,37 +1,70 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const menuBtn = document.getElementById("menuBtn");
-  const closeSidebarBtn = document.getElementById("closeSidebarBtn");
-  const moreBtn = document.getElementById("moreBtn");
-  const plusBtn = document.getElementById("plusBtn");
-  const sendBtn = document.getElementById("sendBtn");
-  const messageInput = document.getElementById("messageInput");
+  const $ = (id) => document.getElementById(id);
 
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("overlay");
-  const moreMenu = document.getElementById("moreMenu");
-  const plusMenu = document.getElementById("plusMenu");
-  const chatArea = document.getElementById("chatArea");
-  const welcome = document.getElementById("welcome");
+  const menuBtn = $("menuBtn");
+  const closeSidebarBtn = $("closeSidebarBtn");
+  const moreBtn = $("moreBtn");
+  const plusBtn = $("plusBtn");
+  const sendBtn = $("sendBtn");
+  const messageInput = $("messageInput");
 
-  const newChatBtn = document.getElementById("newChatBtn");
-  const clearChatBtn = document.getElementById("clearChatBtn");
-  const exportChatBtn = document.getElementById("exportChatBtn");
-  const themeBtn = document.getElementById("themeBtn");
-  const aboutBtn = document.getElementById("aboutBtn");
-  const historyBtn = document.getElementById("historyBtn");
-  const settingsBtn = document.getElementById("settingsBtn");
+  const sidebar = $("sidebar");
+  const overlay = $("overlay");
+  const moreMenu = $("moreMenu");
+  const plusMenu = $("plusMenu");
+  const chatArea = $("chatArea");
+  const welcome = $("welcome");
 
-  const filePreview = document.getElementById("filePreview");
-  const photoInput = document.getElementById("photoInput");
-  const cameraInput = document.getElementById("cameraInput");
-  const fileInput = document.getElementById("fileInput");
+  const newChatBtn = $("newChatBtn");
+  const clearChatBtn = $("clearChatBtn");
+  const exportChatBtn = $("exportChatBtn");
+  const soundBtn = $("soundBtn");
+  const aboutBtn = $("aboutBtn");
+  const historyList = $("historyList");
+
+  const filePreview = $("filePreview");
+  const photoInput = $("photoInput");
+  const cameraInput = $("cameraInput");
+  const fileInput = $("fileInput");
 
   let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
+  let chatSessions = JSON.parse(localStorage.getItem("xinn_history")) || [];
   let isGenerating = false;
+  let soundOn = localStorage.getItem("xinn_sound") !== "off";
   let lastSound = 0;
+
+  soundBtn.textContent = soundOn ? "Sound: ON" : "Sound: OFF";
 
   function saveChats() {
     localStorage.setItem("xinn_chats", JSON.stringify(chats));
+    updateHistory();
+  }
+
+  function updateHistory() {
+    if (chats.length > 0) {
+      const firstUser = chats.find(c => c.role === "user")?.text || "Chat baru";
+      const session = {
+        title: firstUser.slice(0, 34),
+        chats,
+        time: Date.now()
+      };
+      chatSessions = [session, ...chatSessions.filter(s => s.title !== session.title)].slice(0, 8);
+      localStorage.setItem("xinn_history", JSON.stringify(chatSessions));
+    }
+
+    historyList.innerHTML = "";
+    chatSessions.forEach((session) => {
+      const btn = document.createElement("button");
+      btn.className = "history-item";
+      btn.textContent = session.title;
+      btn.onclick = () => {
+        chats = session.chats || [];
+        localStorage.setItem("xinn_chats", JSON.stringify(chats));
+        renderChats();
+        closeAll();
+      };
+      historyList.appendChild(btn);
+    });
   }
 
   function closeAll() {
@@ -42,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function scrollBottom() {
-    chatArea.scrollTop = chatArea.scrollHeight;
+    chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: "smooth" });
   }
 
   function formatMessage(text) {
@@ -54,8 +87,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function playTypingSound() {
+    if (!soundOn) return;
+
     const now = Date.now();
-    if (now - lastSound < 85) return;
+    if (now - lastSound < 80) return;
     lastSound = now;
 
     try {
@@ -92,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = document.createElement("div");
     msg.className = `message ${role}`;
     msg.innerHTML = formatMessage(text);
-
     row.appendChild(msg);
 
     if (role === "user") {
@@ -113,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     scrollBottom();
   }
 
-  function createAIMessageBox() {
+  function createAIBox() {
     if (welcome) welcome.style.display = "none";
 
     const row = document.createElement("div");
@@ -126,30 +160,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const msg = document.createElement("div");
     msg.className = "message ai";
-    msg.innerHTML = `
-      <span class="typing-dots">
-        <span></span><span></span><span></span>
-      </span>
-    `;
+    msg.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span>`;
 
     row.appendChild(avatar);
     row.appendChild(msg);
     chatArea.appendChild(row);
-
     scrollBottom();
+
     return msg;
   }
 
   async function askAIStream(text, onChunk) {
     const res = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: text,
-        history: chats.slice(-20)
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, history: chats.slice(-20) })
     });
 
     if (!res.ok) {
@@ -163,9 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      const chunk = decoder.decode(value);
-      onChunk(chunk);
+      onChunk(decoder.decode(value));
     }
   }
 
@@ -177,13 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     isGenerating = true;
     sendBtn.disabled = true;
-
     messageInput.value = "";
     messageInput.style.height = "auto";
 
     addMessage("user", text);
 
-    const aiBox = createAIMessageBox();
+    const aiBox = createAIBox();
     let fullText = "";
     let buffer = "";
 
@@ -194,7 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (buffer.includes(" ") || buffer.includes("\n") || buffer.length > 18) {
           fullText += buffer;
           buffer = "";
-
           aiBox.innerHTML = formatMessage(fullText) + `<span class="typing-cursor"></span>`;
           renderHighlight();
           playTypingSound();
@@ -208,7 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       chats.push({ role: "ai", text: fullText });
       saveChats();
-
     } catch (err) {
       aiBox.textContent = err.message || "Streaming error.";
     } finally {
@@ -227,12 +247,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    chats.forEach((chat) => addMessage(chat.role, chat.text, false));
+    chats.forEach(chat => addMessage(chat.role, chat.text, false));
+    updateHistory();
   }
 
   function clearChat() {
     chats = [];
-    saveChats();
+    localStorage.setItem("xinn_chats", JSON.stringify(chats));
     chatArea.innerHTML = "";
     chatArea.appendChild(welcome);
     welcome.style.display = "flex";
@@ -240,23 +261,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function exportChat() {
-    if (chats.length === 0) {
-      alert("Chat masih kosong.");
-      return;
-    }
+    if (chats.length === 0) return alert("Chat masih kosong.");
 
-    const text = chats
-      .map((c) => `${c.role === "user" ? "User" : "Xinn AI"}: ${c.text}`)
-      .join("\n\n");
-
+    const text = chats.map(c => `${c.role === "user" ? "User" : "Xinn AI"}: ${c.text}`).join("\n\n");
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
+
     a.href = url;
     a.download = "xinn-ai-chat.txt";
     a.click();
-
     URL.revokeObjectURL(url);
     closeAll();
   }
@@ -268,32 +282,31 @@ document.addEventListener("DOMContentLoaded", () => {
     filePreview.textContent = `File dipilih: ${file.name}`;
     filePreview.classList.add("active");
     plusMenu.classList.remove("active");
-
     addMessage("user", `Saya memilih file: ${file.name}`);
   }
 
-  menuBtn.addEventListener("click", (e) => {
+  menuBtn.onclick = (e) => {
     e.stopPropagation();
     sidebar.classList.add("active");
     overlay.classList.add("active");
-  });
+  };
 
-  closeSidebarBtn.addEventListener("click", closeAll);
-  overlay.addEventListener("click", closeAll);
+  closeSidebarBtn.onclick = closeAll;
+  overlay.onclick = closeAll;
 
-  moreBtn.addEventListener("click", (e) => {
+  moreBtn.onclick = (e) => {
     e.stopPropagation();
     moreMenu.classList.toggle("active");
     plusMenu.classList.remove("active");
-  });
+  };
 
-  plusBtn.addEventListener("click", (e) => {
+  plusBtn.onclick = (e) => {
     e.stopPropagation();
     plusMenu.classList.toggle("active");
     moreMenu.classList.remove("active");
-  });
+  };
 
-  sendBtn.addEventListener("click", sendMessage);
+  sendBtn.onclick = sendMessage;
 
   messageInput.addEventListener("input", () => {
     messageInput.style.height = "auto";
@@ -307,56 +320,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  newChatBtn.addEventListener("click", clearChat);
-  clearChatBtn.addEventListener("click", clearChat);
-  exportChatBtn.addEventListener("click", exportChat);
+  newChatBtn.onclick = clearChat;
+  clearChatBtn.onclick = clearChat;
+  exportChatBtn.onclick = exportChat;
 
-  themeBtn.addEventListener("click", () => {
-    document.body.classList.toggle("light");
+  soundBtn.onclick = () => {
+    soundOn = !soundOn;
+    localStorage.setItem("xinn_sound", soundOn ? "on" : "off");
+    soundBtn.textContent = soundOn ? "Sound: ON" : "Sound: OFF";
     closeAll();
-  });
+  };
 
-  aboutBtn.addEventListener("click", () => {
+  aboutBtn.onclick = () => {
     alert("Xinn AI - Chat AI berbasis Groq API.");
     closeAll();
-  });
+  };
 
-  historyBtn.addEventListener("click", () => {
-    alert(`Total pesan tersimpan: ${chats.length}`);
-    closeAll();
-  });
-
-  settingsBtn.addEventListener("click", () => {
-    alert("Settings aktif.");
-    closeAll();
-  });
-
-  photoInput.addEventListener("change", () => handleFile(photoInput));
-  cameraInput.addEventListener("change", () => handleFile(cameraInput));
-  fileInput.addEventListener("change", () => handleFile(fileInput));
+  photoInput.onchange = () => handleFile(photoInput);
+  cameraInput.onchange = () => handleFile(cameraInput);
+  fileInput.onchange = () => handleFile(fileInput);
 
   document.addEventListener("click", (e) => {
-    if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
-      moreMenu.classList.remove("active");
-    }
+    if (!moreMenu.contains(e.target) && e.target !== moreBtn) moreMenu.classList.remove("active");
+    if (!plusMenu.contains(e.target) && e.target !== plusBtn) plusMenu.classList.remove("active");
 
-    if (!plusMenu.contains(e.target) && e.target !== plusBtn) {
-      plusMenu.classList.remove("active");
-    }
-  });
-
-  document.addEventListener("click", (e) => {
     const pre = e.target.closest("pre");
-    if (!pre) return;
-
-    const code = pre.querySelector("code");
-    if (!code) return;
-
-    navigator.clipboard.writeText(code.innerText);
-
-    pre.setAttribute("data-copy", "done");
-    setTimeout(() => pre.removeAttribute("data-copy"), 1200);
+    if (pre) {
+      const code = pre.querySelector("code");
+      if (!code) return;
+      navigator.clipboard.writeText(code.innerText);
+      pre.setAttribute("data-copy", "done");
+      setTimeout(() => pre.removeAttribute("data-copy"), 1200);
+    }
   });
 
+  updateHistory();
   renderChats();
 });
