@@ -94,3 +94,38 @@ body.light .warning,body.light .welcome p{color:#606575}
   .message{max-width:84%;font-size:14.5px}
   .sidebar{width:85%}
 }
+/* FIX SIDEBAR MOBILE */
+.sidebar {
+  left: -86vw !important;
+  width: 86vw !important;
+  max-width: 310px !important;
+}
+
+.sidebar.active {
+  left: 0 !important;
+}
+
+.overlay.active {
+  display: block !important;
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    width: 78vw !important;
+    left: -78vw !important;
+  }
+
+  .sidebar.active {
+    left: 0 !important;
+  }
+
+  .chat-area {
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  .input-wrap {
+    left: 0 !important;
+    width: 100% !important;
+  }
+    }
