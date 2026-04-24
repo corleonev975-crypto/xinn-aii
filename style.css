@@ -541,3 +541,16 @@ body.light .message.ai {
     padding-right: calc((100% - 760px) / 2);
   }
   }
+.welcome-avatar,
+.chat-avatar {
+  object-fit: cover;
+  object-position: center;
+}
+
+.avatar-wrap {
+  overflow: hidden;
+}
+
+.chat-avatar {
+  background: #111;
+}
