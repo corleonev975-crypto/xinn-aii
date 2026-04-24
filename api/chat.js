@@ -5,31 +5,21 @@ export default async function handler(req, res) {
 
   try {
     const { message, history = [] } = req.body;
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
+    }
 
     if (!message) {
       return res.status(400).json({ error: "Pesan kosong." });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({
-        error: "GROQ_API_KEY belum diisi di Vercel."
-      });
-    }
-
     const systemPrompt = `
 Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
 Jawab dalam Bahasa Indonesia yang natural, santai, jelas, dan membantu.
-Kalau user minta coding, berikan kode yang rapi dan siap pakai.
 Gunakan markdown yang rapi.
-Jika memberi kode, selalu gunakan format code block dengan bahasa:
-\`\`\`html
-\`\`\`
-\`\`\`css
-\`\`\`
-\`\`\`javascript
-\`\`\`
+Jika memberi kode, gunakan code block sesuai bahasa.
 `;
 
     const messages = [
@@ -41,7 +31,7 @@ Jika memberi kode, selalu gunakan format code block dengan bahasa:
       { role: "user", content: message }
     ];
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -51,25 +41,50 @@ Jika memberi kode, selalu gunakan format code block dengan bahasa:
         model: "llama-3.1-8b-instant",
         messages,
         temperature: 0.7,
-        max_tokens: 1024
+        max_tokens: 1024,
+        stream: true
       })
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error?.message || "Groq API error."
+    if (!groqRes.ok) {
+      const errorData = await groqRes.json();
+      return res.status(groqRes.status).json({
+        error: errorData.error?.message || "Groq API error."
       });
     }
 
-    return res.status(200).json({
-      reply: data.choices?.[0]?.message?.content || "Tidak ada jawaban dari AI."
+    res.writeHead(200, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive"
     });
 
+    const reader = groqRes.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+
+        const data = line.replace("data: ", "").trim();
+        if (data === "[DONE]") continue;
+
+        try {
+          const json = JSON.parse(data);
+          const text = json.choices?.[0]?.delta?.content || "";
+          if (text) res.write(text);
+        } catch {}
+      }
+    }
+
+    res.end();
   } catch (error) {
-    return res.status(500).json({
-      error: "Server error. Cek api/chat.js atau Vercel logs."
-    });
+    res.status(500).json({ error: "Server error streaming." });
   }
 }
