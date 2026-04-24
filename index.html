@@ -4,64 +4,59 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xinn AI</title>
-
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <aside id="sidebar" class="sidebar">
     <div class="side-head">
-      <button id="closeSidebarBtn" class="icon-btn mobile-only">×</button>
       <h2>Xinn AI</h2>
+      <button class="close-btn" onclick="closeSidebar()">×</button>
     </div>
-
-    <button id="newChatBtn" class="new-chat">＋ New Chat</button>
-
-    <div class="history-title">Riwayat</div>
-    <div id="historyList" class="history-list"></div>
+    <button class="new-chat" onclick="newChat()">＋ New Chat</button>
+    <p class="side-title">Riwayat</p>
+    <div id="historyList"></div>
   </aside>
 
-  <div id="overlay" class="overlay"></div>
+  <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
-  <section class="app">
-    <header class="topbar">
-      <button id="menuBtn" class="icon-btn">☰</button>
-      <div class="title">Xinn AI</div>
-      <button id="moreBtn" class="icon-btn">⋮</button>
+  <header class="topbar">
+    <button class="icon-btn" onclick="openSidebar()">☰</button>
+    <strong>Xinn AI</strong>
+    <button class="icon-btn" onclick="toggleMore(event)">⋮</button>
 
-      <div id="moreMenu" class="dropdown">
-        <button id="clearChatBtn">🗑 Clear Chat</button>
-        <button id="exportChatBtn">⬇ Export Chat</button>
-        <button id="themeBtn">☀ Mode Terang</button>
-        <button id="aboutBtn">ⓘ About</button>
+    <div id="moreMenu" class="dropdown">
+      <button onclick="clearChat()">🗑 Clear Chat</button>
+      <button onclick="exportChat()">⬇ Export Chat</button>
+      <button onclick="toggleTheme()">☀ Mode Terang</button>
+      <button onclick="alert('Xinn AI — AI Assistant buatan kamu.')">ⓘ About</button>
+    </div>
+  </header>
+
+  <main id="chatArea" class="chat-area">
+    <section id="welcome" class="welcome">
+      <div class="avatar-wrap">
+        <img src="./avatar.gif" alt="Xinn AI">
       </div>
-    </header>
+      <h1>Apa yang bisa saya bantu?</h1>
+      <p>Xinn AI siap bantu coding, desain, debug, dan ide kamu.</p>
+    </section>
+  </main>
 
-    <main id="chatArea" class="chat-area">
-      <section id="welcome" class="welcome">
-        <div class="avatar-wrap">
-          <img src="./avatar.gif" class="welcome-avatar" alt="Xinn AI">
-        </div>
-        <h1>Apa yang bisa saya bantu?</h1>
-        <p>Xinn AI siap membantu anda</p>
-      </section>
-    </main>
+  <footer class="input-wrap">
+    <div id="plusMenu" class="plus-menu">
+      <label>🖼 Foto <input type="file" accept="image/*" hidden onchange="handleFile(this.files[0])"></label>
+      <label>📷 Kamera <input type="file" accept="image/*" capture="environment" hidden onchange="handleFile(this.files[0])"></label>
+      <label>📁 File <input type="file" hidden onchange="handleFile(this.files[0])"></label>
+    </div>
 
-    <footer class="input-wrap">
-      <div id="plusMenu" class="plus-menu">
-        <label>🖼 Foto <input id="photoInput" type="file" accept="image/*" hidden></label>
-        <label>📷 Kamera <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
-        <label>📁 File <input id="fileInput" type="file" hidden></label>
-      </div>
-
-      <div class="chat-input">
-        <button id="plusBtn" class="plus-btn">+</button>
-        <textarea id="messageInput" placeholder="Ketik pesan..." rows="1"></textarea>
-        <button id="sendBtn" class="send-btn">➤</button>
-      </div>
-      <p class="warning">BY XINN AI </p>
-    </footer>
-  </section>
+    <div class="chat-input">
+      <button class="plus-btn" onclick="togglePlus(event)">+</button>
+      <textarea id="messageInput" placeholder="Ketik pesan..." rows="1"></textarea>
+      <button id="sendBtn" class="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+    <p class="warning">Xinn AI dapat membuat kesalahan. Periksa informasi penting.</p>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
@@ -69,6 +64,6 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-css.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
-  <script src="./script.js"></script>
+  <script src="./script.js?v=999"></script>
 </body>
 </html>
