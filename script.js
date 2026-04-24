@@ -1,114 +1,145 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
+let isGenerating = false;
 
-  try {
-    const { message, history = [] } = req.body;
+// ===== FORMAT =====
+function formatMessage(text) {
+  if (!text) return "";
+  text = text.replace(/\n{3,}/g, "\n\n");
+  return marked.parse(text);
+}
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "GROQ_API_KEY belum di-set" });
-    }
+// ===== STREAM (PLAIN TEXT, STABLE) =====
+async function askAIStream(text, onChunk) {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: text,
+      history: chats.slice(-10)
+    })
+  });
 
-    const systemPrompt = `
-Kamu adalah Xinn AI (setara ChatGPT Pro, fokus coding & clarity).
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
 
-ATURAN WAJIB:
-- Jawab singkat, jelas, tidak bertele-tele
-- Bahasa Indonesia natural
-- Jangan halu / ngaco / typo aneh
-- Jangan mengulang kalimat
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-JIKA CODING:
-- Gunakan markdown code block yang BENAR:
-  \`\`\`html
-  \`\`\`css
-  \`\`\`javascript
-  \`\`\`python
-- Kode harus VALID & bisa dijalankan
-- Pisahkan HTML / CSS / JS jika perlu
-- Jangan campur teks ke dalam code block
-
-AUTO DEBUG:
-- Jika user kirim kode → cek & perbaiki
-- Jelaskan singkat kesalahan (1–2 poin)
-- Beri versi kode yang sudah diperbaiki
-
-FORMAT:
-- Gunakan heading jika perlu (###)
-- Gunakan bullet list jika membantu
-- Jangan berlebihan
-`;
-
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...history.map((c) => ({
-        role: c.role === "ai" ? "assistant" : "user",
-        content: c.text
-      })),
-      { role: "user", content: message }
-    ];
-
-    const groqRes = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          temperature: 0.5,
-          max_tokens: 900,
-          stream: true,
-          messages
-        })
-      }
-    );
-
-    if (!groqRes.ok) {
-      const err = await groqRes.text();
-      return res.status(500).json({ error: err });
-    }
-
-    // 👉 kirim plain text chunk ke client
-    res.writeHead(200, {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive"
-    });
-
-    const reader = groqRes.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-
-      // filter SSE -> ambil content saja
-      const lines = chunk.split("\n");
-
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-
-        const data = line.replace("data:", "").trim();
-        if (data === "[DONE]") continue;
-
-        try {
-          const json = JSON.parse(data);
-          const text = json.choices?.[0]?.delta?.content;
-          if (text) res.write(text);
-        } catch {}
-      }
-    }
-
-    res.end();
-
-  } catch (e) {
-    res.status(500).json({ error: "Server error" });
+    const chunk = decoder.decode(value, { stream: true });
+    if (chunk) onChunk(chunk);
   }
 }
+
+// ===== COPY BUTTON =====
+document.addEventListener("click", (e) => {
+  const pre = e.target.closest("pre");
+  if (!pre) return;
+
+  const code = pre.innerText;
+  navigator.clipboard.writeText(code);
+
+  pre.setAttribute("data-copy", "done");
+  setTimeout(() => pre.removeAttribute("data-copy"), 1200);
+});
+
+// ===== PREVIEW HTML =====
+function renderPreview(code) {
+  const iframe = document.createElement("iframe");
+  iframe.style.width = "100%";
+  iframe.style.height = "220px";
+  iframe.style.border = "1px solid #333";
+  iframe.srcdoc = code;
+  return iframe;
+}
+
+function extractCodeBlock(text, lang) {
+  const regex = new RegExp("```" + lang + "([\\s\\S]*?)```", "i");
+  const match = text.match(regex);
+  return match ? match[1] : null;
+}
+
+// ===== SEND MESSAGE =====
+async function sendMessage() {
+  if (isGenerating) return;
+
+  const text = messageInput.value.trim();
+  if (!text) return;
+
+  isGenerating = true;
+  sendBtn.disabled = true;
+
+  messageInput.value = "";
+
+  addMessage("user", text);
+
+  const aiBox = createAIBox();
+
+  // delay mikir biar natural
+  await new Promise(r => setTimeout(r, 500));
+
+  let fullText = "";
+  let first = true;
+
+  try {
+    await askAIStream(text, async (chunk) => {
+
+      if (first) {
+        aiBox.innerHTML = "";
+        first = false;
+      }
+
+      // tampil per karakter (biar gak pecah kata)
+      for (let i = 0; i < chunk.length; i++) {
+        const char = chunk[i];
+        fullText += char;
+
+        let speed = fullText.length < 200 ? 18 : 10;
+
+        if (/[.,!?]/.test(char)) speed += 180;
+        if (Math.random() < 0.04) speed += 120;
+
+        aiBox.innerHTML =
+          formatMessage(fullText) +
+          `<span class="typing-cursor"></span>`;
+
+        scrollBottom();
+        if (window.Prism) Prism.highlightAll();
+
+        await new Promise(r => setTimeout(r, speed));
+      }
+
+    });
+
+    // final render
+    aiBox.innerHTML = formatMessage(fullText);
+    if (window.Prism) Prism.highlightAll();
+
+    // ===== AUTO PREVIEW HTML =====
+    const htmlCode = extractCodeBlock(fullText, "html");
+    if (htmlCode) {
+      const preview = renderPreview(htmlCode);
+      aiBox.appendChild(preview);
+    }
+
+    // simpan chat
+    chats.push({ role: "ai", text: fullText });
+    localStorage.setItem("xinn_chats", JSON.stringify(chats));
+
+  } catch {
+    aiBox.textContent = "⚠️ Gagal mengambil jawaban";
+  }
+
+  isGenerating = false;
+  sendBtn.disabled = false;
+}
+
+// ===== EVENTS =====
+sendBtn.onclick = sendMessage;
+
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
