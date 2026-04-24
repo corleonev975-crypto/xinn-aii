@@ -1,11 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
+
+  // ===== ELEMENT =====
   const sendBtn = document.getElementById("sendBtn");
   const messageInput = document.getElementById("messageInput");
   const chatArea = document.getElementById("chatArea");
   const welcome = document.getElementById("welcome");
 
+  const moreBtn = document.getElementById("moreBtn");
+  const moreMenu = document.getElementById("moreMenu");
+
+  const plusBtn = document.getElementById("plusBtn");
+  const plusMenu = document.getElementById("plusMenu");
+
+  const menuBtn = document.getElementById("menuBtn");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+
   let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
 
+  // ===== SAVE =====
   function saveChats() {
     localStorage.setItem("xinn_chats", JSON.stringify(chats));
   }
@@ -14,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
+  // ===== MESSAGE =====
   function addMessage(role, text, save = true) {
     if (welcome) welcome.style.display = "none";
 
@@ -37,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     typing.className = "message ai typing";
     typing.innerText = "Xinn AI sedang mengetik...";
     chatArea.appendChild(typing);
-    scrollBottom();
   }
 
   function hideTyping() {
@@ -45,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (t) t.remove();
   }
 
+  // ===== API =====
   async function askAI(text) {
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -76,17 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addMessage("ai", reply);
   }
 
-  function loadChats() {
-    if (chats.length === 0) return;
-
-    welcome.style.display = "none";
-
-    chats.forEach(c => {
-      addMessage(c.role, c.text, false);
-    });
-  }
-
-  // ===== FORMAT MESSAGE (CODE BLOCK FIX) =====
+  // ===== FORMAT MESSAGE =====
   function formatMessage(text) {
     if (text.includes("```")) {
       return text
@@ -95,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .replace(/\n/g, "<br>");
     }
-
     return text.replace(/\n/g, "<br>");
   }
 
@@ -106,6 +110,53 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/>/g, "&gt;");
   }
 
+  // ===== LOAD CHAT =====
+  function loadChats() {
+    if (chats.length === 0) return;
+    welcome.style.display = "none";
+
+    chats.forEach(c => addMessage(c.role, c.text, false));
+  }
+
+  // =========================
+  // 🔥 FIX TOMBOL
+  // =========================
+
+  // ⋮ MORE
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    moreMenu.classList.toggle("active");
+    plusMenu.classList.remove("active");
+  };
+
+  // + PLUS
+  plusBtn.onclick = (e) => {
+    e.stopPropagation();
+    plusMenu.classList.toggle("active");
+    moreMenu.classList.remove("active");
+  };
+
+  // CLOSE DROPDOWN
+  document.addEventListener("click", () => {
+    moreMenu.classList.remove("active");
+    plusMenu.classList.remove("active");
+  });
+
+  // SIDEBAR
+  menuBtn.onclick = () => {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  };
+
+  overlay.onclick = closeSidebar;
+  closeSidebarBtn.onclick = closeSidebar;
+
+  function closeSidebar() {
+    sidebar.classList.remove("active");
+    overlay.classList.remove("active");
+  }
+
+  // ===== SEND =====
   sendBtn.onclick = sendMessage;
 
   messageInput.addEventListener("keydown", (e) => {
@@ -115,5 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // INIT
   loadChats();
+
 });
