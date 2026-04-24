@@ -27,6 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("fileInput");
 
   let chats = JSON.parse(localStorage.getItem("xinn_chats")) || [];
+  let isGenerating = false;
+  let lastSound = 0;
 
   function saveChats() {
     localStorage.setItem("xinn_chats", JSON.stringify(chats));
@@ -41,6 +43,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function scrollBottom() {
     chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function formatMessage(text) {
+    return marked.parse(text || "");
+  }
+
+  function renderHighlight() {
+    setTimeout(() => Prism.highlightAll(), 0);
+  }
+
+  function playTypingSound() {
+    const now = Date.now();
+    if (now - lastSound < 85) return;
+    lastSound = now;
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.value = 520;
+      gain.gain.value = 0.008;
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.018);
+    } catch {}
   }
 
   function addMessage(role, text, save = true) {
@@ -77,13 +109,14 @@ document.addEventListener("DOMContentLoaded", () => {
       saveChats();
     }
 
-    setTimeout(() => Prism.highlightAll(), 0);
+    renderHighlight();
     scrollBottom();
   }
 
-  function showTyping() {
+  function createAIMessageBox() {
+    if (welcome) welcome.style.display = "none";
+
     const row = document.createElement("div");
-    row.id = "typing";
     row.className = "message-row ai";
 
     const avatar = document.createElement("img");
@@ -91,23 +124,98 @@ document.addEventListener("DOMContentLoaded", () => {
     avatar.src = "./avatar.gif";
     avatar.alt = "Xinn AI";
 
-    const typing = document.createElement("div");
-    typing.className = "message ai";
-    typing.innerHTML = `
+    const msg = document.createElement("div");
+    msg.className = "message ai";
+    msg.innerHTML = `
       <span class="typing-dots">
         <span></span><span></span><span></span>
       </span>
     `;
 
     row.appendChild(avatar);
-    row.appendChild(typing);
+    row.appendChild(msg);
     chatArea.appendChild(row);
+
     scrollBottom();
+    return msg;
   }
 
-  function hideTyping() {
-    const typing = document.getElementById("typing");
-    if (typing) typing.remove();
+  async function askAIStream(text, onChunk) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        history: chats.slice(-20)
+      })
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "API error.");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      onChunk(chunk);
+    }
+  }
+
+  async function sendMessage() {
+    if (isGenerating) return;
+
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    isGenerating = true;
+    sendBtn.disabled = true;
+
+    messageInput.value = "";
+    messageInput.style.height = "auto";
+
+    addMessage("user", text);
+
+    const aiBox = createAIMessageBox();
+    let fullText = "";
+    let buffer = "";
+
+    try {
+      await askAIStream(text, (chunk) => {
+        buffer += chunk;
+
+        if (buffer.includes(" ") || buffer.includes("\n") || buffer.length > 18) {
+          fullText += buffer;
+          buffer = "";
+
+          aiBox.innerHTML = formatMessage(fullText) + `<span class="typing-cursor"></span>`;
+          renderHighlight();
+          playTypingSound();
+          scrollBottom();
+        }
+      });
+
+      fullText += buffer;
+      aiBox.innerHTML = formatMessage(fullText);
+      renderHighlight();
+
+      chats.push({ role: "ai", text: fullText });
+      saveChats();
+
+    } catch (err) {
+      aiBox.textContent = err.message || "Streaming error.";
+    } finally {
+      isGenerating = false;
+      sendBtn.disabled = false;
+      scrollBottom();
+    }
   }
 
   function renderChats() {
@@ -120,46 +228,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     chats.forEach((chat) => addMessage(chat.role, chat.text, false));
-  }
-
-  function formatMessage(text) {
-    return marked.parse(text || "");
-  }
-
-  async function askAI(text) {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          history: chats.slice(-20)
-        })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) return data.error || "API error.";
-      return data.reply || "Xinn AI tidak menjawab.";
-    } catch (err) {
-      return "Koneksi error. Cek internet atau Vercel API kamu.";
-    }
-  }
-
-  async function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    messageInput.value = "";
-    messageInput.style.height = "auto";
-
-    addMessage("user", text);
-    showTyping();
-
-    const reply = await askAI(text);
-
-    hideTyping();
-    addMessage("ai", reply);
   }
 
   function clearChat() {
@@ -177,7 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const text = chats.map(c => `${c.role === "user" ? "User" : "Xinn AI"}: ${c.text}`).join("\n\n");
+    const text = chats
+      .map((c) => `${c.role === "user" ? "User" : "Xinn AI"}: ${c.text}`)
+      .join("\n\n");
+
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
 
