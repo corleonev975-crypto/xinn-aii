@@ -170,6 +170,7 @@ button {
   background: linear-gradient(135deg, #4b8cff, #9b5cff, #00e5ff);
   box-shadow: 0 0 28px rgba(75,140,255,.75), 0 0 60px rgba(155,92,255,.35);
   animation: avatarPulse 2.4s infinite ease-in-out;
+  overflow: hidden;
 }
 
 .welcome-avatar {
@@ -178,6 +179,7 @@ button {
   border-radius: 50%;
   display: block;
   object-fit: cover;
+  object-position: center;
   background: #101014;
 }
 
@@ -217,7 +219,9 @@ button {
   height: 34px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   flex-shrink: 0;
+  background: #111;
   box-shadow: 0 0 18px rgba(75,140,255,.55);
   border: 1px solid rgba(255,255,255,.12);
 }
@@ -256,6 +260,16 @@ button {
   color: #f4f4f5;
   border: 1px solid rgba(255,255,255,.08);
   border-bottom-left-radius: 6px;
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 18px;
+  background: #fff;
+  margin-left: 4px;
+  animation: blinkCursor .8s infinite;
+  vertical-align: middle;
 }
 
 .typing-dots {
@@ -395,7 +409,6 @@ textarea::placeholder {
   margin: 8px 0 0;
 }
 
-/* MARKDOWN */
 .message h1, .message h2, .message h3 {
   margin: 10px 0 8px;
   line-height: 1.25;
@@ -447,7 +460,6 @@ textarea::placeholder {
   color: #4b8cff;
 }
 
-/* CODE */
 .message pre {
   position: relative;
   background: #0d1117 !important;
@@ -534,6 +546,11 @@ body.light .message.ai {
   40% { transform: translateY(-5px); opacity: 1; }
 }
 
+@keyframes blinkCursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 @media (min-width: 760px) {
   .chat-area,
   .input-wrap {
@@ -541,16 +558,3 @@ body.light .message.ai {
     padding-right: calc((100% - 760px) / 2);
   }
   }
-.welcome-avatar,
-.chat-avatar {
-  object-fit: cover;
-  object-position: center;
-}
-
-.avatar-wrap {
-  overflow: hidden;
-}
-
-.chat-avatar {
-  background: #111;
-}
