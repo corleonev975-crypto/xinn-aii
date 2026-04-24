@@ -5,21 +5,40 @@ export default async function handler(req, res) {
 
   try {
     const { message, history = [] } = req.body;
+
     const apiKey = process.env.GROQ_API_KEY;
-
     if (!apiKey) {
-      return res.status(500).json({ error: "GROQ_API_KEY belum diisi di Vercel." });
-    }
-
-    if (!message) {
-      return res.status(400).json({ error: "Pesan kosong." });
+      return res.status(500).json({ error: "GROQ_API_KEY belum di-set" });
     }
 
     const systemPrompt = `
-Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
-Jawab dalam Bahasa Indonesia yang natural, santai, jelas, dan membantu.
-Gunakan markdown rapi.
-Kalau memberi kode, gunakan code block sesuai bahasa.
+Kamu adalah Xinn AI (setara ChatGPT Pro, fokus coding & clarity).
+
+ATURAN WAJIB:
+- Jawab singkat, jelas, tidak bertele-tele
+- Bahasa Indonesia natural
+- Jangan halu / ngaco / typo aneh
+- Jangan mengulang kalimat
+
+JIKA CODING:
+- Gunakan markdown code block yang BENAR:
+  \`\`\`html
+  \`\`\`css
+  \`\`\`javascript
+  \`\`\`python
+- Kode harus VALID & bisa dijalankan
+- Pisahkan HTML / CSS / JS jika perlu
+- Jangan campur teks ke dalam code block
+
+AUTO DEBUG:
+- Jika user kirim kode → cek & perbaiki
+- Jelaskan singkat kesalahan (1–2 poin)
+- Beri versi kode yang sudah diperbaiki
+
+FORMAT:
+- Gunakan heading jika perlu (###)
+- Gunakan bullet list jika membantu
+- Jangan berlebihan
 `;
 
     const messages = [
@@ -31,31 +50,33 @@ Kalau memberi kode, gunakan code block sesuai bahasa.
       { role: "user", content: message }
     ];
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages,
-        temperature: 0.8,
-        max_tokens: 1024,
-        stream: true
-      })
-    });
+    const groqRes = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          temperature: 0.5,
+          max_tokens: 900,
+          stream: true,
+          messages
+        })
+      }
+    );
 
     if (!groqRes.ok) {
-      const errorData = await groqRes.json();
-      return res.status(groqRes.status).json({
-        error: errorData.error?.message || "Groq API error."
-      });
+      const err = await groqRes.text();
+      return res.status(500).json({ error: err });
     }
 
+    // 👉 kirim plain text chunk ke client
     res.writeHead(200, {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
+      "Cache-Control": "no-cache",
       "Connection": "keep-alive"
     });
 
@@ -67,32 +88,27 @@ Kalau memberi kode, gunakan code block sesuai bahasa.
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
+
+      // filter SSE -> ambil content saja
       const lines = chunk.split("\n");
 
       for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
+        if (!line.startsWith("data:")) continue;
 
-        const data = line.replace("data: ", "").trim();
-
-        if (data === "[DONE]") {
-          continue;
-        }
+        const data = line.replace("data:", "").trim();
+        if (data === "[DONE]") continue;
 
         try {
           const json = JSON.parse(data);
-          const text = json.choices?.[0]?.delta?.content || "";
-
-          if (text) {
-            res.write(text);
-          }
+          const text = json.choices?.[0]?.delta?.content;
+          if (text) res.write(text);
         } catch {}
       }
     }
 
     res.end();
-  } catch (error) {
-    return res.status(500).json({
-      error: "Server error streaming."
-    });
+
+  } catch (e) {
+    res.status(500).json({ error: "Server error" });
   }
-      }
+}
