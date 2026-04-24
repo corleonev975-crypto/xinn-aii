@@ -1,135 +1,119 @@
-document.addEventListener("DOMContentLoaded", () => {
+// =======================
+// INIT
+// =======================
+const sendBtn = document.querySelector(".send-btn");
+const input = document.querySelector("textarea");
+const chat = document.querySelector(".chat-area");
 
-  const sendBtn = document.getElementById("sendBtn");
-  const messageInput = document.getElementById("messageInput");
-  const chatArea = document.getElementById("chatArea");
+let isLoading = false;
 
-  let isLoading = false;
+// =======================
+// SCROLL
+// =======================
+function scrollBottom() {
+  chat.scrollTop = chat.scrollHeight;
+}
 
-  function scrollBottom() {
-    chatArea.scrollTop = chatArea.scrollHeight;
-  }
+// =======================
+// TAMBAH CHAT
+// =======================
+function addMessage(role, text) {
+  const row = document.createElement("div");
+  row.className = `message-row ${role}`;
 
-  function addMessage(role, text) {
-    const row = document.createElement("div");
-    row.className = `message-row ${role}`;
+  const bubble = document.createElement("div");
+  bubble.className = `message ${role}`;
+  bubble.innerHTML = text;
 
-    const bubble = document.createElement("div");
-    bubble.className = `message ${role}`;
-    bubble.innerHTML = text || "";
+  row.appendChild(bubble);
+  chat.appendChild(row);
 
-    row.appendChild(bubble);
-    chatArea.appendChild(row);
+  scrollBottom();
+  return bubble;
+}
 
-    scrollBottom();
-    return bubble;
-  }
+// =======================
+// LOADING DOTS
+// =======================
+function loadingBubble() {
+  return addMessage("ai", `
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>
+  `);
+}
 
-  function createLoading() {
-    return addMessage("ai", `
-      <span class="typing-dots">
-        <span></span><span></span><span></span>
-      </span>
-    `);
-  }
+// =======================
+// FAKE AI (BIAR TEST DULU)
+// =======================
+async function fakeAI(text) {
+  await new Promise(r => setTimeout(r, 800));
 
-  // =========================
-  // API FIX (ANTI KOSONG)
-  // =========================
-  async function fetchAI(message) {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message })
-      });
+  return "Halo 👋 ini respon dari AI.\n\nKamu ngetik: **" + text + "**";
+}
 
-      if (!res.ok) throw new Error("API error");
+// =======================
+// SEND MESSAGE (FIX TOTAL)
+// =======================
+async function sendMessage() {
+  console.log("SEND KE TEKAN"); // 🔥 debug
 
-      const text = await res.text();
+  if (isLoading) return;
 
-      // 🔥 FIX: kalau kosong
-      if (!text || text.trim() === "") {
-        return "⚠️ AI tidak mengembalikan jawaban.";
-      }
+  const text = input.value.trim();
+  if (!text) return;
 
-      return text;
+  isLoading = true;
+  sendBtn.disabled = true;
 
-    } catch (err) {
-      console.error(err);
-      return "⚠️ Error: koneksi / API gagal.";
-    }
-  }
+  input.value = "";
 
-  // =========================
-  // SEND MESSAGE (ANTI BUG)
-  // =========================
-  async function sendMessage() {
-    console.log("CLICK");
+  addMessage("user", text);
 
-    if (isLoading) return;
+  const bubble = loadingBubble();
 
-    const text = messageInput.value.trim();
-    if (!text) return;
+  try {
+    const res = await fakeAI(text);
 
-    isLoading = true;
-    sendBtn.disabled = true;
+    bubble.innerHTML = "";
 
-    messageInput.value = "";
+    let output = "";
 
-    addMessage("user", text);
+    for (let i = 0; i < res.length; i++) {
+      output += res[i];
 
-    const aiBubble = createLoading();
+      bubble.innerHTML =
+        output + `<span class="typing-cursor"></span>`;
 
-    await new Promise(r => setTimeout(r, 500));
+      scrollBottom();
 
-    try {
-      const response = await fetchAI(text);
+      let speed = 10;
+      if (/[.,!?]/.test(res[i])) speed = 60;
 
-      aiBubble.innerHTML = "";
-
-      let finalText = "";
-
-      for (let i = 0; i < response.length; i++) {
-        finalText += response[i];
-
-        aiBubble.innerHTML =
-          finalText + `<span class="typing-cursor"></span>`;
-
-        scrollBottom();
-
-        let speed = 10;
-
-        if (/[.,!?]/.test(response[i])) speed = 60;
-        if (Math.random() < 0.05) speed = 100;
-
-        await new Promise(r => setTimeout(r, speed));
-      }
-
-      aiBubble.innerHTML = finalText;
-
-    } catch (err) {
-      aiBubble.innerHTML = "⚠️ Gagal memproses jawaban";
-      console.error(err);
+      await new Promise(r => setTimeout(r, speed));
     }
 
-    // 🔥 FIX PENTING: RESET STATE
-    isLoading = false;
-    sendBtn.disabled = false;
+    bubble.innerHTML = output;
+
+  } catch (e) {
+    bubble.innerHTML = "⚠️ Error AI";
   }
 
-  // =========================
-  // EVENT FIX
-  // =========================
-  sendBtn.addEventListener("click", sendMessage);
+  isLoading = false;
+  sendBtn.disabled = false;
+}
 
-  messageInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
+// =======================
+// EVENT LISTENER (INI YANG PENTING)
+// =======================
 
+// tombol kirim
+sendBtn.addEventListener("click", sendMessage);
+
+// enter kirim
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
