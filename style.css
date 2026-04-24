@@ -91,3 +91,20 @@ textarea::placeholder{color:#888}
 @media(min-width:760px){
   .chat-area,.input-wrap{padding-left:calc((100% - 760px)/2);padding-right:calc((100% - 760px)/2)}
                     }
+.copy-code-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: #30363d;
+  color: white;
+  border: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.message pre {
+  position: relative;
+}
