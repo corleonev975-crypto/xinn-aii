@@ -408,3 +408,44 @@ body.light .message.ai {
     padding-right: calc((100% - 760px) / 2);
   }
   }
+/* CHAT FIX */
+.message {
+  max-width: 78%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  margin: 8px 0;
+  font-size: 15px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.message.user {
+  margin-left: auto;
+  background: #2f2f34;
+}
+
+.message.ai {
+  margin-right: auto;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+/* CODE BLOCK */
+pre {
+  background: #111;
+  padding: 12px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+code {
+  color: #00e5ff;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* TYPING */
+.message.typing {
+  opacity: 0.7;
+  font-style: italic;
+}
