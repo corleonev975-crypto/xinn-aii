@@ -19,9 +19,9 @@ export default async function handler(req, res) {
     }
 
     const systemPrompt = `
-Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
-Jawab pakai Bahasa Indonesia, santai, jelas, dan membantu.
-Kalau user minta coding, berikan kode lengkap siap pakai.
+Kamu adalah Xinn AI, asisten AI seperti ChatGPT.
+Jawab dalam Bahasa Indonesia, santai, jelas, dan membantu.
+Kalau user minta coding, kasih kode lengkap siap pakai.
 `;
 
     const messages = [
@@ -42,7 +42,7 @@ Kalau user minta coding, berikan kode lengkap siap pakai.
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.1-70b-versatile", // ✅ MODEL BARU (FIX ERROR)
+        model: "llama-3.1-8b-instant", // ✅ FIX MODEL AKTIF
         messages: messages,
         temperature: 0.7,
         max_tokens: 1024
