@@ -206,3 +206,80 @@ body.light .warning,body.light .welcome p{color:#606575}
   .quick-grid button{font-size:13px;padding:13px}
   .message{max-width:84%;font-size:15px}
   }
+/* ===== FIX MENU + AVATAR RUSAK ===== */
+
+.more-menu,
+.dropdown {
+  position: fixed !important;
+  top: 62px !important;
+  right: 14px !important;
+  left: auto !important;
+  width: 230px !important;
+  display: none !important;
+  z-index: 99999 !important;
+  background: rgba(18,22,42,.96) !important;
+  border: 1px solid rgba(130,110,255,.35) !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+  box-shadow: 0 22px 60px rgba(0,0,0,.5) !important;
+}
+
+.more-menu.active,
+.dropdown.active {
+  display: block !important;
+}
+
+.more-menu button,
+.dropdown button {
+  display: block !important;
+  width: 100% !important;
+  padding: 13px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: white !important;
+  text-align: left !important;
+}
+
+/* avatar jangan jadi gambar besar */
+.big-avatar,
+.avatar-wrap {
+  width: 118px !important;
+  height: 118px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+.big-avatar img,
+.avatar-wrap img,
+.welcome-avatar {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+}
+
+/* avatar chat kecil */
+.chat-avatar {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+/* sidebar avatar kecil */
+.side-profile img {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+}
+
+/* jangan ada gambar bebas jadi besar */
+img {
+  max-width: 100%;
+}
+
+/* topbar tetap rapi */
+.topbar {
+  overflow: visible !important;
+  }
