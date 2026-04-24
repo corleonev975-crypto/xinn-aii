@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xinn AI</title>
-
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -16,10 +15,8 @@
       <h2>Xinn AI</h2>
       <button id="closeSidebarBtn" class="close-btn">×</button>
     </div>
-
     <button id="newChatBtn" class="side-btn">+ New Chat</button>
-    <button id="historyBtn" class="side-btn">Riwayat Chat</button>
-    <button id="settingsBtn" class="side-btn">Settings</button>
+    <div id="historyList" class="history-list"></div>
   </aside>
 
   <header class="topbar">
@@ -30,7 +27,7 @@
     <div id="moreMenu" class="dropdown">
       <button id="clearChatBtn">Clear Chat</button>
       <button id="exportChatBtn">Export Chat</button>
-      <button id="themeBtn">Toggle Theme</button>
+      <button id="soundBtn">Sound: ON</button>
       <button id="aboutBtn">About</button>
     </div>
   </header>
@@ -60,7 +57,6 @@
       <textarea id="messageInput" placeholder="Ketik pesan ke Xinn AI..." rows="1"></textarea>
       <button id="sendBtn" class="send-btn">➤</button>
     </div>
-
     <p class="warning">Xinn AI dapat membuat kesalahan. Periksa informasi penting.</p>
   </footer>
 
