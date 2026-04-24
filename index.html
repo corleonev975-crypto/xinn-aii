@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xinn AI</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -12,23 +13,34 @@
 
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-head">
-      <h2>Xinn AI</h2>
+      <div>
+        <h2>Xinn AI</h2>
+        <p>AI Assistant</p>
+      </div>
       <button id="closeSidebarBtn" class="close-btn">×</button>
     </div>
-    <button id="newChatBtn" class="side-btn">+ New Chat</button>
-    <div id="historyList" class="history-list"></div>
+
+    <button id="newChatBtn" class="side-main">＋ New Chat</button>
   </aside>
 
   <header class="topbar">
-    <button id="menuBtn" class="icon-btn">☰</button>
-    <h1>Xinn AI</h1>
-    <button id="moreBtn" class="icon-btn">⋮</button>
+    <div class="left-actions">
+      <button id="menuBtn" class="icon-btn">☰</button>
+      <button id="moreBtn" class="icon-btn">⋮</button>
+    </div>
+
+    <div class="brand">
+      <strong>Xinn <span>AI</span></strong>
+      <small><i></i> online</small>
+    </div>
+
+    <div class="right-space"></div>
 
     <div id="moreMenu" class="dropdown">
-      <button id="clearChatBtn">Clear Chat</button>
-      <button id="exportChatBtn">Export Chat</button>
-      <button id="soundBtn">Sound: ON</button>
-      <button id="aboutBtn">About</button>
+      <button id="clearChatBtn">🗑️ Clear Chat</button>
+      <button id="exportChatBtn">⬇️ Export Chat</button>
+      <button id="themeBtn">🌙 Mode Terang</button>
+      <button id="aboutBtn">ⓘ About Xinn AI</button>
     </div>
   </header>
 
@@ -45,18 +57,17 @@
 
   <footer class="input-wrap">
     <div id="plusMenu" class="plus-menu">
-      <label>📷 Foto <input id="photoInput" type="file" accept="image/*" hidden></label>
-      <label>📸 Kamera <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
+      <label>🖼️ Foto <input id="photoInput" type="file" accept="image/*" hidden></label>
+      <label>📷 Kamera <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
       <label>📁 File <input id="fileInput" type="file" hidden></label>
     </div>
-
-    <div id="filePreview" class="file-preview"></div>
 
     <div class="chat-input">
       <button id="plusBtn" class="plus-btn">+</button>
       <textarea id="messageInput" placeholder="Ketik pesan ke Xinn AI..." rows="1"></textarea>
       <button id="sendBtn" class="send-btn">➤</button>
     </div>
+
     <p class="warning">Xinn AI dapat membuat kesalahan. Periksa informasi penting.</p>
   </footer>
 
@@ -65,6 +76,7 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-markup.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-css.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
   <script src="./script.js"></script>
 </body>
 </html>
