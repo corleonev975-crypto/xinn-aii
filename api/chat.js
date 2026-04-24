@@ -14,56 +14,56 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "GROQ_API_KEY belum diisi di Environment Variables Vercel."
+        error: "GROQ_API_KEY belum diisi di Vercel."
       });
     }
 
     const systemPrompt = `
 Kamu adalah Xinn AI, asisten AI modern seperti ChatGPT.
-Jawab dalam Bahasa Indonesia yang natural, jelas, santai, dan membantu.
-Fokus ke solusi praktis.
-Kalau user minta coding, berikan kode rapi dan siap pakai.
-Jangan terlalu kaku.
+Jawab pakai Bahasa Indonesia, santai, jelas, dan membantu.
+Kalau user minta coding, berikan kode lengkap siap pakai.
 `;
 
     const messages = [
       { role: "system", content: systemPrompt },
+
       ...history.map((c) => ({
         role: c.role === "ai" ? "assistant" : "user",
         content: c.text
       })),
+
       { role: "user", content: message }
     ];
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192",
-        messages,
+        model: "llama-3.1-70b-versatile", // ✅ MODEL BARU (FIX ERROR)
+        messages: messages,
         temperature: 0.7,
-        max_tokens: 2048
+        max_tokens: 1024
       })
     });
 
-    const data = await groqRes.json();
+    const data = await response.json();
 
-    if (!groqRes.ok) {
-      return res.status(groqRes.status).json({
-        error: data.error?.message || "Groq API error."
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Groq API error"
       });
     }
 
     return res.status(200).json({
-      reply: data.choices?.[0]?.message?.content || "Tidak ada jawaban dari AI."
+      reply: data.choices?.[0]?.message?.content || "AI tidak menjawab"
     });
 
-  } catch (error) {
+  } catch (err) {
     return res.status(500).json({
-      error: "Server error. Cek api/chat.js atau Vercel logs."
+      error: "Server error di Vercel"
     });
   }
 }
