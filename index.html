@@ -10,9 +10,9 @@
   <div id="overlay" class="overlay"></div>
 
   <aside id="sidebar" class="sidebar">
-    <div class="sidebar-top">
+    <div class="sidebar-head">
       <h2>Xinn AI</h2>
-      <button id="closeSidebarBtn">×</button>
+      <button id="closeSidebarBtn" class="close-btn">×</button>
     </div>
 
     <button id="newChatBtn" class="side-btn">+ New Chat</button>
@@ -36,20 +36,19 @@
   <main id="chatArea" class="chat-area">
     <section id="welcome" class="welcome">
       <div class="avatar-wrap">
-        <img src="./assets/avatar.gif" class="ai-avatar" alt="Xinn AI Avatar" />
+        <div class="avatar-x">X</div>
       </div>
-
-      <h2 class="brand-name">XINN AI</h2>
+      <h2>XINN AI</h2>
       <h1>Apa yang bisa saya bantu?</h1>
-      <p>Xinn AI siap bantu coding, desain, debugging, dan ide kamu.</p>
+      <p>Tanyakan coding, desain, debugging, atau ide apa pun.</p>
     </section>
   </main>
 
-  <div class="input-wrap">
+  <footer class="input-wrap">
     <div id="plusMenu" class="plus-menu">
-      <label>📷 Foto <input id="photoInput" type="file" accept="image/*" hidden /></label>
-      <label>📸 Kamera <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden /></label>
-      <label>📁 File <input id="fileInput" type="file" hidden /></label>
+      <label>📷 Foto <input id="photoInput" type="file" accept="image/*" hidden></label>
+      <label>📸 Kamera <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
+      <label>📁 File <input id="fileInput" type="file" hidden></label>
     </div>
 
     <div id="filePreview" class="file-preview"></div>
@@ -61,8 +60,8 @@
     </div>
 
     <p class="warning">Xinn AI dapat membuat kesalahan. Periksa informasi penting.</p>
-  </div>
+  </footer>
 
   <script src="./script.js"></script>
 </body>
-</html>
+    </html>
