@@ -179,3 +179,59 @@ body.light .message.ai{color:#111}
   .mobile-only{display:block}
   .message{max-width:84%;font-size:15px}
             }
+/* ===== CHAT GPT STYLE FIX ===== */
+
+.msg {
+  display: flex;
+  margin: 12px 0;
+}
+
+.msg.user {
+  justify-content: flex-end;
+}
+
+.msg.ai {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* USER (abu kayak GPT) */
+.msg.user .bubble {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+/* AI */
+.msg.ai .bubble {
+  background: #111;
+  border: 1px solid #222;
+}
+
+/* CODE BLOCK */
+pre {
+  position: relative;
+  background: #0d1117;
+  padding: 14px;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+/* COPY BUTTON */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #222;
+  border: none;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
