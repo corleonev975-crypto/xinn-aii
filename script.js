@@ -33,14 +33,77 @@ document.addEventListener("DOMContentLoaded", () => {
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m]));
+  }
+
+  function normalizeMarkdown(text) {
+    return (text || "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/```\s*html/gi, "```html")
+      .replace(/```\s*css/gi, "```css")
+      .replace(/```\s*js/gi, "```javascript")
+      .replace(/```\s*javascript/gi, "```javascript")
+      .replace(/```\s*python/gi, "```python");
+  }
+
   function format(text) {
-    if (!text) return "";
-    if (window.marked) return marked.parse(text);
-    return text.replace(/\n/g, "<br>");
+    const clean = normalizeMarkdown(text);
+    if (window.marked) return marked.parse(clean);
+    return escapeHtml(clean).replace(/\n/g, "<br>");
+  }
+
+  function liveFormat(text) {
+    let clean = normalizeMarkdown(text);
+
+    const fenceCount = (clean.match(/```/g) || []).length;
+    if (fenceCount % 2 === 1) {
+      clean += "\n```";
+    }
+
+    if (window.marked) return marked.parse(clean);
+    return escapeHtml(clean).replace(/\n/g, "<br>");
   }
 
   function highlight() {
-    if (window.Prism) setTimeout(() => Prism.highlightAll(), 0);
+    if (window.Prism) {
+      requestAnimationFrame(() => Prism.highlightAll());
+    }
+  }
+
+  function addCopyButtons(scope) {
+    const pres = scope.querySelectorAll("pre");
+    pres.forEach((pre) => {
+      if (pre.querySelector(".copy-code-btn")) return;
+
+      const btn = document.createElement("button");
+      btn.className = "copy-code-btn";
+      btn.textContent = "Copy";
+      btn.type = "button";
+
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const code = pre.querySelector("code");
+        await navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
+        btn.textContent = "Copied!";
+        setTimeout(() => (btn.textContent = "Copy"), 1200);
+      };
+
+      pre.appendChild(btn);
+    });
+  }
+
+  function renderBubble(bubble, text, live = false) {
+    bubble.innerHTML = (live ? liveFormat(text) : format(text)) + (live ? `<span class="typing-cursor"></span>` : "");
+    highlight();
+    addCopyButtons(bubble);
+    scrollBottom();
   }
 
   function addMessage(role, text, save = true) {
@@ -59,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const bubble = document.createElement("div");
     bubble.className = `message ${role}`;
-    bubble.innerHTML = format(text);
+    renderBubble(bubble, text, false);
 
     row.appendChild(bubble);
 
@@ -77,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
       saveChats();
     }
 
-    highlight();
     scrollBottom();
     return bubble;
   }
@@ -134,28 +196,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const ai = loadingBubble();
     let output = "";
+    let lastRender = 0;
 
     try {
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 350));
       ai.innerHTML = "";
 
       await streamAI(text, (chunk) => {
         output += chunk;
 
-        ai.innerHTML = format(output) + `<span class="typing-cursor"></span>`;
-        highlight();
-        scrollBottom();
+        const now = Date.now();
+        if (now - lastRender > 60 || /[.!?}\n]$/.test(output)) {
+          renderBubble(ai, output, true);
+          lastRender = now;
+        }
       });
 
-      ai.innerHTML = output ? format(output) : "⚠️ AI tidak memberi jawaban.";
-      highlight();
+      renderBubble(ai, output || "⚠️ AI tidak memberi jawaban.", false);
 
       chats.push({ role: "ai", text: output });
       saveChats();
 
     } catch (err) {
       console.error(err);
-      ai.innerHTML = "⚠️ Error: API gagal atau koneksi bermasalah.";
+      renderBubble(ai, "⚠️ Error: API gagal atau koneksi bermasalah.", false);
 
     } finally {
       loading = false;
@@ -235,14 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.addEventListener("click", (e) => {
-    const pre = e.target.closest("pre");
-    if (pre) {
-      const code = pre.querySelector("code");
-      navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
-      pre.setAttribute("data-copy", "done");
-      setTimeout(() => pre.removeAttribute("data-copy"), 1200);
-    }
-
     if (moreMenu && !moreMenu.contains(e.target) && e.target !== moreBtn) {
       moreMenu.classList.remove("active");
     }
